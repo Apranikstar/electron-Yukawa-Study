@@ -219,7 +219,7 @@ class RDFanalysis:
 
         df = df.Define("Jets_p4", "JetConstituentsUtils::compute_tlv_jets(SortedJets)")
         df = df.Define("Jets_InMa",  "(Jets_p4[1]+Jets_p4[2]).M()",)
-        df = df.Filter("m_jj < 43")
+        df = df.Filter("m_jj > 45.07")
 
 
         return df
