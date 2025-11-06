@@ -222,7 +222,7 @@ class RDFanalysis:
 
         df = df.Define("Jets_InMa",  "JetConstituentsUtils::InvariantMass(Jets_p4[0], Jets_p4[1])",)
 
-        df = df.Filter("Jets_InMa > 52.85" )
+        df = df.Filter("Jets_InMa > 50.33" )
         #df = df.Define("Jets_InMa < 100")
 
 
