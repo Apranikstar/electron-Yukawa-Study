@@ -26,7 +26,7 @@ processList = {
 
 }
 
-outputDir   = "./output/tau"
+outputDir   = "."
 inputDir    = "/eos/experiment/fcc/ee/generation/DelphesEvents/winter2023/IDEA"
 nCPUS       = -1
 includePaths = ["../src/functions.h", "../src/SortJets.h"]
