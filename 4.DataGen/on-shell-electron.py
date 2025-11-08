@@ -186,7 +186,6 @@ class RDFanalysis:
         df = df.Define("Iso_Electron_Et", "IsoElectron_4p[0].Et()")
         df = df.Define("Iso_Electron_CosTheta", "IsoElectron_4p[0].CosTheta()")
         df = df.Define("Iso_Electron_CosPhi", "TMath::Cos(Iso_Electron_Phi)")
-        df = df.Define("Iso_Electrons_No", "electrons_sel_iso.size()")
         df = df.Define("Iso_Electron_Charge", "FCCAnalyses::ReconstructedParticle::get_charge(electrons_sel_iso)[0]")
 
         # Missing energy repeated derivatives (kept for compatibility)
@@ -492,7 +491,6 @@ class RDFanalysis:
         branchList = [
 
             "IsoMuonNum",
-            "Iso_Electrons_No",
             "Missing_Pt",
             "Iso_Photon_P",
             "Iso_Photon_Pt",
