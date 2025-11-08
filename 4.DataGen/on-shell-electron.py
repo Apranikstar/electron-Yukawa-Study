@@ -49,7 +49,7 @@ processList = {
     "p8_ee_ZZ_4tau_ecm125": {"fraction": 1},
 }
 
-outputDir = "./output"
+outputDir = "/eos/experiment/fcc/ee/analyses/case-studies/higgs/electron_yukawa/DataGen/on-shell-electron/"
 inputDir = "/eos/experiment/fcc/ee/generation/DelphesEvents/winter2023/IDEA"
 nCPUS = -1
 includePaths = ["../src/functions.h", "../src/GEOFunctions.h", "../src/MELAFunctions.h","../src/SortJets.h" ]
@@ -430,6 +430,7 @@ class RDFanalysis:
         df = df.Define("RP_px",          "ReconstructedParticle::get_px(ReconstructedParticles)")
         df = df.Define("RP_py",          "ReconstructedParticle::get_py(ReconstructedParticles)")
         df = df.Define("RP_pz",          "ReconstructedParticle::get_pz(ReconstructedParticles)")
+        df = df.Define("RP_e",           "ReconstructedParticle::get_e(ReconstructedParticles)")
   
         df=  df.Define('EVT_thrust',     'Algorithms::minimize_thrust("Minuit2","Migrad")(RP_px, RP_py, RP_pz)')
         df = df.Define('RP_thrustangle', 'Algorithms::getAxisCosTheta(EVT_thrust, RP_px, RP_py, RP_pz)')
