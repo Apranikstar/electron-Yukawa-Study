@@ -104,6 +104,12 @@ class RDFanalysis:
         df = df.Alias("Photon0", "Photon#0.index")
         df = df.Alias("Jet2", "Jet#2.index")
 
+
+        # Missing energy cut 
+        df = df.Define("MissingE_4p", "FCCAnalyses::ReconstructedParticle::get_tlv(MissingET)")
+        df = df.Define("Missing_Pt", "MissingE_4p[0].Pt()")
+        df = df.Filter("Missing_Pt > 3  ")
+
         # Photons and charged hadrons
         df = df.Define("photons_all", "FCCAnalyses::ReconstructedParticle::get(Photon0, ReconstructedParticles)")
         df = df.Define("photons", "FCCAnalyses::ReconstructedParticle::sel_p(20)(photons_all)")
@@ -151,10 +157,7 @@ class RDFanalysis:
         df = df.Define("IsoElectron_4p", "FCCAnalyses::ReconstructedParticle::get_tlv(electrons_sel_iso)")
         df = df.Define("IsoMuon_4p", "FCCAnalyses::ReconstructedParticle::get_tlv(muons_sel_iso)")
 
-        # Missing energy
-        df = df.Define("MissingE_4p", "FCCAnalyses::ReconstructedParticle::get_tlv(MissingET)")
-        df = df.Define("Missing_Pt", "MissingE_4p[0].Pt()")
-        df = df.Filter("Missing_Pt > 3  ")
+        
 
         # Isolated photons info
         df = df.Define("IsoPhotons_4p", "FCCAnalyses::ReconstructedParticle::get_tlv(photons_sel_iso)")
