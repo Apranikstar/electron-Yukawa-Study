@@ -654,7 +654,7 @@ class RDFanalysis:
             "RP_thrustangle",
             "EVT_thrust_x",
             "EVT_thrust_y",
-            "EVT_thrust_z"
+            "EVT_thrust_z",
             "EVT_thrust_val",
             "EVT_sphericity",
             "EVT_sphericity_x",
