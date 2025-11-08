@@ -251,14 +251,16 @@ class RDFanalysis:
         )
         df = jetFlavourHelper.define(df)
 
-        # Tagger inference
-        df = jetFlavourHelper.inference(weaver_preproc, weaver_model, df)
+        
 
         # Filters and jet definitions
         df = df.Filter("event_njet > 1")
         df = df.Define("Jets_p4", "JetConstituentsUtils::compute_tlv_jets({})".format(jetClusteringHelper.jets))
         df = df.Define("Jets_InMa", "JetConstituentsUtils::InvariantMass(Jets_p4[0], Jets_p4[1])")
         df = df.Filter("Jets_InMa < 52.85")
+
+        # Tagger inference
+        df = jetFlavourHelper.inference(weaver_preproc, weaver_model, df)
 
         jetClusteringHelper_N2 = ExclusiveJetClusteringHelper("ReconstructedParticlesNoleptonsNoPhotons", 2, "N2")
         df = jetClusteringHelper_N2.define(df)
