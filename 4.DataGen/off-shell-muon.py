@@ -49,7 +49,7 @@ processList = {
     "p8_ee_ZZ_4tau_ecm125": {"fraction": 1},
 }
 
-outputDir = "/eos/experiment/fcc/ee/analyses/case-studies/higgs/electron_yukawa/DataGen/on-shell-electron/"
+outputDir = "/eos/experiment/fcc/ee/analyses/case-studies/higgs/electron_yukawa/DataGen/off-shell-muon/"
 inputDir = "/eos/experiment/fcc/ee/generation/DelphesEvents/winter2023/IDEA"
 nCPUS = -1
 includePaths = ["../src/functions.h", "../src/GEOFunctions.h", "../src/MELAFunctions.h","../src/SortJets.h" ]
