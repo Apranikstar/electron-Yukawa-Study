@@ -228,10 +228,9 @@ class BDTYukawaPipelineGPU:
             return f[self.tree_name_stage3].num_entries
 
     def base_process_name(self, filename):
-        name = os.path.basename(filename)
-        name = name.replace(".root", "")
-        # Remove trailing _chunkNN or trailing numeric shard suffixes like _1, _12
-        name = re.sub(r"_(chunk\d+|\d+)$", "", name)
+        name = os.path.basename(filename).replace(".root", "")
+        # Remove trailing _chunkN
+        name = re.sub(r"_chunk\d+$", "", name)
         return name + ".root"
 
     def stage3_evaluate(self):
