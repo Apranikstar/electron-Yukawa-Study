@@ -14,7 +14,7 @@ Requirements:
  - numpy, pandas (only minimal, for CPU fallbacks)
  - tqdm
 
-Author: adapted for user request
+Author: Apranik + GPT xD ( not tested so be careful)
 """
 
 import os
