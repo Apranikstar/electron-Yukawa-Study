@@ -143,7 +143,7 @@ class BDTYukawaPipeline:
         name = os.path.basename(filename).replace(".root", "")
         import re
         # Remove patterns: _1, _23, _chunk00, _chunk01, _chunk123
-        name = re.sub(r"_(chunk\d+|\d+)$", "", name)
+        name = re.sub(r"_chunk\d+$", "", name)
         return name + ".root"
 
     def stage3_evaluate(self):
