@@ -286,8 +286,10 @@ for method_id, method_name in significance_methods.items():
             background_per_bin.append(b)
         
         # Check minimum signal constraint
-        min_signal = min(signal_per_bin)
+        min_signal = min(signal_per_bin) if signal_per_bin else 0
+        
         if min_signal < min_signal_per_bin:
+            print(f"  n_bins = {n_bins:3d} → SKIPPED (min signal/bin = {min_signal:.2f} < {min_signal_per_bin})")
             continue
         
         # Calculate significance for this method
