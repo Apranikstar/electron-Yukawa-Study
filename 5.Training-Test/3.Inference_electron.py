@@ -8,8 +8,12 @@ import numpy as np
 from tqdm import tqdm
 
 # ------------------ CONFIG ------------------
-data_dir = "/eos/experiment/fcc/ee/analyses/case-studies/higgs/electron_yukawa/DataGen/on-shell-electron/"
+data_dir = "/eos/experiment/fcc/ee/analyses/case-studies/higgs/electron_yukawa/DataGenReduced/on-shell-electron/"
 tree_name = "events"
+
+# GPU configuration
+USE_GPU = True  # Set to False to use CPU
+DEVICE = "cuda:0"  # GPU device to use (cuda:0, cuda:1, etc.)
 
 signal_files = [
     os.path.join(data_dir, "wzp6_ee_Henueqq_ecm125.root"),
@@ -21,111 +25,69 @@ background_files = [
     if f.endswith(".root")
     and f not in ["wzp6_ee_Henueqq_ecm125.root", "wzp6_ee_Htaunutauqq_ecm125.root"]
 ]
+
 features = [
-    "IsoMuonNum",
-    "Missing_Pt",
-    "Iso_Photon_P",
-    "Iso_Photon_Pt",
-    "Iso_Photon_Eta",
     "Iso_Photon_Phi",
-    "Iso_Photon_Rapidity",
     "Iso_Photon_Theta",
-    "Iso_Photon_M",
-    "Iso_Photon_Mt",
     "Iso_Photon_E",
-    "Iso_Photon_Et",
     "Iso_Photon_CosTheta",
     "Iso_Photon_CosPhi",
     "Iso_Photons_No",
-    "IsoElectron_3p",
+
     "Iso_Electron_P",
-    "Iso_Electron_Pt",
-    "Iso_Electron_Eta",
     "Iso_Electron_Phi",
-    "Iso_Electron_Rapidity",
     "Iso_Electron_Theta",
-    "Iso_Electron_M",
-    "Iso_Electron_Mt",
     "Iso_Electron_E",
-    "Iso_Electron_Et",
     "Iso_Electron_CosTheta",
     "Iso_Electron_CosPhi",
     "Iso_Electrons_No",
-    "Iso_Electron_Charge",
+
     "Missing_P",
-    "Missing_Eta",
-    "Missing_Phi",
-    "Missing_Rapidity",
-    "Missing_Theta",
-    "Missing_M",
-    "Missing_Mt",
     "Missing_E",
-    "Missing_Et",
-    "Missing_CosTheta",
-    "Missing_CosPhi",
+    "Missing_Pt",
+
     "EnuM",
     "Jets_InMa",
+
     "d23",
     "d34",
-    "Jets_charge",
+
     "Jet_nconst0",
     "Jet_nconst1",
-    "displacementdz0",
-    "displacementdxy0",
-    "displacementdz1",
-    "displacementdxy1",
-    "Jet1_P3",
+    
     "Jet1_P",
-    "Jet1_Pt",
-    "Jet1_Eta",
-    "Jet1_Rapidity",
     "Jet1_Phi",
     "Jet1_M",
-    "Jet1_Mt",
     "Jet1_E",
-    "Jet1_Et",
     "Jet1_Theta",
     "Jet1_CosTheta",
     "Jet1_CosPhi",
-    "Jet2_P3",
+
     "Jet2_P",
-    "Jet2_Pt",
-    "Jet2_Eta",
-    "Jet2_Rapidity",
     "Jet2_Phi",
     "Jet2_M",
-    "Jet2_Mt",
     "Jet2_E",
-    "Jet2_Et",
     "Jet2_Theta",
     "Jet2_CosTheta",
     "Jet2_CosPhi",
-    "Max_JetsPT",
-    "Min_JetsPT",
+
     "Max_JetsE",
     "Min_JetsE",
     "Jet1_charge",
     "Jet2_charge",
+
     "Jets_delR",
     "ILjet1_delR",
     "ILjet2_delR",
     "Max_DelRLJets",
     "Min_DelRLJets",
+
     "Jets_delphi",
     "ILjet1_delphi",
     "ILjet2_delphi",
     "Max_DelPhiLJets",
     "Min_DelPhiLJets",
-    "Jets_deleta",
-    "ILjet1_deleta",
-    "ILjet2_deleta",
-    "Max_DelEtaLJets",
-    "Min_DelEtaLJets",
-    "Jets_delrapi",
-    "ILjet1_delrapi",
-    "ILjet2_delrapi",
-    "Max_DelyLJets",
-    "Min_DelyLJets",
+
     "Jets_deltheta",
     "Jets_angle",
     "ILjet1_angle",
@@ -135,27 +97,17 @@ features = [
     "ILjet2_cosangle",
     "Max_CosLJets",
     "Min_CosLJets",
-    "HT",
+
     "Event_IM",
     "LJJ_M",
-    "LJJ_Mt",
     "LJ1_M",
-    "LJ1_Mt",
     "LJ2_M",
-    "LJ2_Mt",
-    "Lnu_M",
     "JJ_M",
-    "JJ_Mt",
     "JJ_E",
-    "lj1_PT",
-    "lj2_PT",
-    "jj_PT",
-    "ljj_y",
-    "jj_y",
-    "lj1_y",
-    "lj2_y",
+
     "ljj_Phi",
     "jj_Phi",
+
     "Wl_M",
     "Wl_Theta",
     "Shell_M",
@@ -163,6 +115,7 @@ features = [
     "CosTheta_MaxjjW",
     "CosTheta_MinjjW",
     "expD",
+
     "Phi",
     "CosPhi",
     "Phi1",
@@ -179,37 +132,30 @@ features = [
     "APlanarity",
     "Sphericity",
     "ASphericity",
-    "scoreG1",
-    "scoreG2",
-    "scoreU1",
-    "scoreU2",
-    "scoreS1",
-    "scoreS2",
-    "scoreC1",
-    "scoreC2",
-    "scoreB1",
-    "scoreB2",
-    "scoreT1",
-    "scoreT2",
-    "scoreD1",
-    "scoreD2",
-    "scoreSumG",
-    "scoreSumU",
-    "scoreSumS",
-    "scoreSumC",
-    "scoreSumB",
-    "scoreSumT",
-    "scoreSumD",
-    "scoreMultiplyG",
+
+    #"scoreMultiplyG",
     "scoreMultiplyU",
     "scoreMultiplyS",
     "scoreMultiplyC",
     "scoreMultiplyB",
     "scoreMultiplyT",
     "scoreMultiplyD",
+
+    "scoreSumUD",
+    "scoreSumDU",
+    "scoreSumSC",
+    "scoreSumCS",
+    "scoreSumB",
+    "scoreSumT",
+
+    "scoreProdUD",
+    "scoreProdDU",
+    "scoreProdSC",
+    "scoreProdCS",
 ]
 
-chunk_size = 100_000
+# Process 1M events per chunk
+chunk_size = 1_000_000
 
 # ------------------ FUNCTIONS ------------------
 def flatten_awkward_columns(df):
@@ -229,7 +175,7 @@ def flatten_awkward_columns(df):
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
     return df
 
-def load_root_in_chunks(file_list, step=100_000):
+def load_root_in_chunks(file_list, step=1_000_000):
     """Iterate over ROOT files in chunks and return DataFrames."""
     for df in uproot.iterate(
         [f"{fn}:{tree_name}" for fn in file_list],
@@ -241,7 +187,7 @@ def load_root_in_chunks(file_list, step=100_000):
         df = flatten_awkward_columns(df)
         yield df
 
-def evaluate_file(file_path, model, features, step=100_000):
+def evaluate_file(file_path, model, features, step=1_000_000, use_gpu=False):
     """Evaluate BDT model on a ROOT file and return predictions."""
     preds_all = []
 
@@ -259,14 +205,20 @@ def evaluate_file(file_path, model, features, step=100_000):
                 print(f"  {c}: {df[c].dtype}")
             raise ValueError("Cannot create DMatrix with non-numeric columns")
         
-        dmat = xgb.DMatrix(df[features])
+        # Create DMatrix with GPU support
+        if use_gpu:
+            dmat = xgb.DMatrix(df[features], enable_categorical=False)
+            dmat.set_info(feature_names=features)
+        else:
+            dmat = xgb.DMatrix(df[features])
+        
         preds = model.predict(dmat)
         preds_all.append(preds)
 
     if not preds_all:
-        return np.array([])
+        return np.array([]).reshape(0, 5)  # Return empty array with correct shape for 5 classes
 
-    return np.concatenate(preds_all)
+    return np.vstack(preds_all)
 
 def get_num_events(file_path):
     """Return total number of entries in the ROOT tree."""
@@ -282,15 +234,42 @@ def base_process_name(filename):
     return name + ".root"
 
 # ------------------ LOAD MODEL ------------------
+print("=" * 60)
+print("XGBoost 5-Class GPU Inference Pipeline")
+print("=" * 60)
+
+# Load model
 bst = xgb.Booster()
-bst.load_model("on-shell-electron.json")
-print("✅ Loaded model from on-shell-electron.json")
+bst.load_model("multiclass_5class_model.json")
+
+# Configure model for GPU inference
+if USE_GPU:
+    bst.set_param({"device": DEVICE})
+    print(f"✅ Loaded model with GPU support ({DEVICE})")
+    print(f"   Using batch size: {chunk_size:,} events per chunk")
+else:
+    print("✅ Loaded model (CPU mode)")
+    print(f"   Using batch size: {chunk_size:,} events per chunk")
+
+# Verify GPU availability if requested
+if USE_GPU:
+    try:
+        import torch
+        if torch.cuda.is_available():
+            print(f"   GPU detected: {torch.cuda.get_device_name(0)}")
+        else:
+            print("   WARNING: GPU requested but CUDA not available, falling back to CPU")
+            USE_GPU = False
+    except ImportError:
+        print("   WARNING: PyTorch not found, cannot verify GPU. Proceeding anyway...")
+
+print()
 
 # ------------------ EVALUATE ------------------
-def collect_results(file_list, model):
+def collect_results(file_list, model, use_gpu=False):
     results = {}
     for file_path in file_list:
-        preds = evaluate_file(file_path, model, features, chunk_size)
+        preds = evaluate_file(file_path, model, features, chunk_size, use_gpu=use_gpu)
         n_events = get_num_events(file_path)
         base_name = base_process_name(file_path)
 
@@ -300,11 +279,11 @@ def collect_results(file_list, model):
         results[base_name]["n_events"] += n_events
     return results
 
-print("\n=== Evaluating Signal Samples ===")
-sig_results = collect_results(signal_files, bst)
+print("=== Evaluating Signal Samples ===")
+sig_results = collect_results(signal_files, bst, use_gpu=USE_GPU)
 
 print("\n=== Evaluating Background Samples ===")
-bg_results = collect_results(background_files, bst)
+bg_results = collect_results(background_files, bst, use_gpu=USE_GPU)
 
 # ------------------ SAVE UNBINNED DISTRIBUTIONS ------------------
 output_dir = "bdt_distributions"
@@ -317,7 +296,11 @@ def make_unbinned_df(preds, process_name, n_events, cross_section=0.0):
         "cross_section": cross_section,
         "total_events_in_file": n_events,
         "event_idx": np.arange(len(preds)),
-        "bdt_score": preds
+        "bdt_signal": preds[:, 0],          # Class 0: Signal probability
+        "bdt_ww": preds[:, 1],              # Class 1: WW probability
+        "bdt_zz_leptonic": preds[:, 2],     # Class 2: ZZ_leptonic probability
+        "bdt_zz_2lep2j": preds[:, 3],       # Class 3: ZZ_2lep2j probability
+        "bdt_zstar": preds[:, 4]            # Class 4: Zstar probability
     })
     return df
 
@@ -325,19 +308,19 @@ dfs = []
 
 print("\n=== Building final unbinned DataFrame with metadata ===")
 for name, data in sig_results.items():
-    preds = np.concatenate(data["preds"])
+    preds = np.vstack(data["preds"])
     df = make_unbinned_df(preds, name, data["n_events"], cross_section=0.0)
     dfs.append(df)
 
 for name, data in bg_results.items():
-    preds = np.concatenate(data["preds"])
+    preds = np.vstack(data["preds"])
     df = make_unbinned_df(preds, name, data["n_events"], cross_section=0.0)
     dfs.append(df)
 
 final_df = pd.concat(dfs, ignore_index=True)
 
 # ------------------ SAVE TO PICKLE ------------------
-output_pkl = os.path.join(output_dir, "bdt_scores_unbinned.pkl")
+output_pkl = os.path.join(output_dir, "bdt_scores_unbinned_5class.pkl")
 final_df.to_pickle(output_pkl)
 
 print(f"\n📦 Final DataFrame saved → {output_pkl}")
@@ -346,3 +329,11 @@ print("\nProcesses in final DataFrame:")
 print(final_df['process'].unique())
 print("\nPreview:")
 print(final_df.head())
+print("\nVerify probabilities sum to 1.0:")
+prob_sum = final_df[['bdt_signal', 'bdt_ww', 'bdt_zz_leptonic', 'bdt_zz_2lep2j', 'bdt_zstar']].sum(axis=1)
+print(f"  Min sum: {prob_sum.min():.6f}")
+print(f"  Max sum: {prob_sum.max():.6f}")
+print(f"  Mean sum: {prob_sum.mean():.6f}")
+print("\n" + "=" * 60)
+print("Inference complete!")
+print("=" * 60)
