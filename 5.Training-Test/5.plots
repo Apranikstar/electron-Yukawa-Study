@@ -1,0 +1,395 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+# ------------------ CONFIGURATION ------------------
+# Output directory for plots
+output_dir = "/eos/user/h/hfatehi/ep-fcc/on-e/binning_plots"
+os.makedirs(output_dir, exist_ok=True)
+
+# Signal process names
+signal_processes = ["wzp6_ee_Henueqq_ecm125.root", "wzp6_ee_Htaunutauqq_ecm125.root"]
+
+# Background grouping and colors
+background_groups = {
+    r"$WW^*$": {
+        "processes": ["wzp6_ee_enueqq_ecm125.root", "wzp6_ee_munumuqq_ecm125.root", 
+                     "wzp6_ee_taunutauqq_ecm125.root", "wzp6_ee_l1l2nunu_ecm125.root"],
+        "color": "#3498db"
+    },
+    r"$ZZ^*$ (leptonic)": {
+        "processes": ["wzp6_ee_tautaununu_ecm125.root", "wzp6_ee_eenunu_ecm125.root",
+                     "wzp6_ee_mumununu_ecm125.root", "p8_ee_ZZ_4tau_ecm125.root"],
+        "color": "#2ecc71"
+    },
+    r"$ZZ^*$ (2l2j)": {
+        "processes": ["wzp6_ee_tautauqq_ecm125.root", "wzp6_ee_mumuqq_ecm125.root",
+                     "wzp6_ee_eeqq_ecm125.root"],
+        "color": "#27ae60"
+    },
+    r"$Z+X$": {
+        "processes": ["wzp6_ee_tautau_ecm125.root", "wzp6_ee_qq_ecm125.root"],
+        "color": "#e67e22"
+    },
+    "Other Higgs": {
+        "processes": ["wzp6_ee_Htautau_ecm125.root", "wzp6_ee_Hllnunu_ecm125.root",
+                     "wzp6_ee_Hgg_ecm125.root", "wzp6_ee_Hbb_ecm125.root",
+                     "wzp6_ee_Hmunumuqq_ecm125.root", "wzp6_ee_Hqqenue_ecm125.root",
+                     "wzp6_ee_Hqqmunumu_ecm125.root", "wzp6_ee_Hqqtaunutau_ecm125.root"],
+        "color": "#95a5a6"
+    }
+}
+
+# Signal styling
+signal_color = "#e74c3c"
+signal_linewidth = 2.5
+
+# ------------------ FUNCTIONS ------------------
+def load_binned_data(pkl_file):
+    """Load binned data from pickle file"""
+    df = pd.read_pickle(pkl_file)
+    return df
+
+def prepare_data_for_plotting(df):
+    """Organize data by bin for plotting"""
+    bins = sorted(df['bin_id'].unique())
+    n_bins = len(bins)
+    
+    # Initialize data structures
+    signal_events = np.zeros(n_bins)
+    background_by_group = {group: np.zeros(n_bins) for group in background_groups.keys()}
+    
+    # Fill signal
+    signal_df = df[df['process'].isin(signal_processes)]
+    for i, bin_id in enumerate(bins):
+        bin_signal = signal_df[signal_df['bin_id'] == bin_id]['reco_level_events'].sum()
+        signal_events[i] = bin_signal
+    
+    # Fill backgrounds by group
+    for group_name, group_info in background_groups.items():
+        group_df = df[df['process'].isin(group_info['processes'])]
+        for i, bin_id in enumerate(bins):
+            bin_bkg = group_df[group_df['bin_id'] == bin_id]['reco_level_events'].sum()
+            background_by_group[group_name][i] = bin_bkg
+    
+    return bins, signal_events, background_by_group
+
+def plot_stacked_histogram(bins, signal_events, background_by_group, method_name, output_dir):
+    """Create stacked histogram with signal overlay"""
+    n_bins = len(bins)
+    x = np.arange(n_bins)
+    width = 0.8
+    
+    fig, ax = plt.subplots(figsize=(12, 7))
+    
+    # Plot stacked backgrounds
+    bottom = np.zeros(n_bins)
+    for group_name, group_info in background_groups.items():
+        values = background_by_group[group_name]
+        ax.bar(x, values, width, label=group_name, bottom=bottom, 
+               color=group_info['color'], edgecolor='black', linewidth=0.5)
+        bottom += values
+    
+    # Plot signal as line with markers on top
+    ax.plot(x, signal_events, color=signal_color, linewidth=signal_linewidth, 
+            label=r'Signal ($H \to \ell\nu qq$)', marker='o', markersize=6, zorder=10)
+    
+    # Formatting
+    ax.set_xlabel('Bin Number', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Events', fontsize=12, fontweight='bold')
+    ax.set_title(f'Binned Distribution - {method_name}', fontsize=14, fontweight='bold')
+    ax.set_xticks(x)
+    ax.set_xticklabels([f'{int(b)}' for b in bins])
+    ax.legend(loc='upper center', frameon=True, fancybox=True, shadow=True)
+    ax.grid(True, alpha=0.3, linestyle='--', axis='y')
+    
+    # Add text with total yields
+    total_signal = signal_events.sum()
+    total_background = sum(background_by_group[g].sum() for g in background_by_group)
+    s_over_b = total_signal / total_background if total_background > 0 else 0
+    s_over_sqrt_b = total_signal / np.sqrt(total_background) if total_background > 0 else 0
+    
+    text_str = f'Total Signal: {total_signal:.2f}\n'
+    text_str += f'Total Background: {total_background:.2f}\n'
+    text_str += f'S/B: {s_over_b:.4f}\n'
+    text_str += f'S/√B: {s_over_sqrt_b:.3f}'
+    
+    ax.text(0.02, 0.98, text_str, transform=ax.transAxes, fontsize=10,
+            verticalalignment='top', bbox=dict(boxstyle='round', facecolor='wheat', alpha=0.8))
+    
+    plt.tight_layout()
+    
+    # Save
+    filename = f"stacked_histogram_{method_name.lower().replace(' ', '_').replace('/', '_').replace('(', '').replace(')', '')}.png"
+    filepath = os.path.join(output_dir, filename)
+    plt.savefig(filepath, dpi=300, bbox_inches='tight')
+    print(f"✅ Saved: {filepath}")
+    plt.close()
+
+def plot_log_scale_histogram(bins, signal_events, background_by_group, method_name, output_dir):
+    """Create log-scale stacked histogram with visible tiny signal"""
+
+    n_bins = len(bins)
+    x = np.arange(n_bins)
+    width = 0.8
+
+    fig, ax = plt.subplots(figsize=(12, 7))
+
+    # ----- background stack -----
+    bottom = np.zeros(n_bins)
+    for group_name, group_info in background_groups.items():
+        values = background_by_group[group_name]
+        ax.bar(
+            x, values, width, label=group_name, bottom=bottom,
+            color=group_info['color'], edgecolor='black', linewidth=0.5
+        )
+        bottom += values
+
+    # ----- second y-axis for signal -----
+    ax2 = ax.twinx()
+    ax2.set_yscale('log')
+    ax2.plot(
+        x, signal_events,
+        color=signal_color, linewidth=signal_linewidth,
+        label=r"Signal ($H \to \ell\nu qq$)",
+        marker='o', markersize=6, zorder=10
+    )
+
+    # ----- formatting -----
+    ax.set_yscale('log')
+    ax.set_xlabel('Bin Number', fontsize=12, fontweight='bold')
+    ax.set_ylabel('Background Events (log scale)', fontsize=12, fontweight='bold')
+    ax2.set_ylabel('Signal Events (log scale)', fontsize=12, fontweight='bold')
+    ax.set_title(f'Binned Distribution (Log Scale) - {method_name}',
+                 fontsize=14, fontweight='bold')
+
+    ax.set_xticks(x)
+    ax.set_xticklabels([f'{int(b)}' for b in bins])
+    ax.grid(True, alpha=0.3, linestyle='--', axis='both')
+
+    # ----- merged legend -----
+    handles1, labels1 = ax.get_legend_handles_labels()
+    handles2, labels2 = ax2.get_legend_handles_labels()
+    ax2.legend(handles1 + handles2, labels1 + labels2,
+               loc='upper right', frameon=True, fancybox=True, shadow=True)
+
+    plt.tight_layout()
+
+    # ----- save -----
+    filename = f"stacked_histogram_log_{method_name.lower().replace(' ', '_').replace('/', '_').replace('(', '').replace(')', '')}.png"
+    filepath = os.path.join(output_dir, filename)
+    plt.savefig(filepath, dpi=300, bbox_inches='tight')
+    print(f"✅ Saved: {filepath}")
+    plt.close()
+
+
+def create_statistics_table(df, method_name, output_dir):
+    """Create detailed statistics table for each bin"""
+    bins = sorted(df['bin_id'].unique())
+    
+    # Prepare data
+    stats_data = []
+    
+    for bin_id in bins:
+        bin_df = df[df['bin_id'] == bin_id]
+        
+        # Signal
+        signal_df = bin_df[bin_df['process'].isin(signal_processes)]
+        total_signal = signal_df['reco_level_events'].sum()
+        
+        # Total background
+        bkg_df = bin_df[~bin_df['process'].isin(signal_processes)]
+        total_background = bkg_df['reco_level_events'].sum()
+        
+        # Background by group
+        bkg_by_group = {}
+        for group_name, group_info in background_groups.items():
+            group_df = bin_df[bin_df['process'].isin(group_info['processes'])]
+            bkg_by_group[group_name] = group_df['reco_level_events'].sum()
+        
+        # Calculate metrics
+        s_over_b = total_signal / total_background if total_background > 0 else 0
+        s_over_sqrt_b = total_signal / np.sqrt(total_background) if total_background > 0 else 0
+        
+        stats_data.append({
+            'Bin': int(bin_id),
+            'Signal': total_signal,
+            'Total_Bkg': total_background,
+            **{f'{g}': bkg_by_group[g] for g in background_groups.keys()},
+            'S/B': s_over_b,
+            'S/√B': s_over_sqrt_b
+        })
+    
+    stats_df = pd.DataFrame(stats_data)
+    
+    # Create figure with table
+    fig, ax = plt.subplots(figsize=(16, max(8, len(bins) * 0.5)))
+    ax.axis('tight')
+    ax.axis('off')
+    
+    # Format table data for display
+    table_data = []
+    headers = ['Bin', 'Signal'] + list(background_groups.keys()) + ['Total Bkg', 'S/B', 'S/√B']
+    
+    for _, row in stats_df.iterrows():
+        row_data = [
+            f"{int(row['Bin'])}",
+            f"{row['Signal']:.2f}",
+        ]
+        for group in background_groups.keys():
+            row_data.append(f"{row[group]:.2f}")
+        row_data.extend([
+            f"{row['Total_Bkg']:.2f}",
+            f"{row['S/B']:.4f}",
+            f"{row['S/√B']:.3f}"
+        ])
+        table_data.append(row_data)
+    
+    # Add totals row
+    total_row = ['TOTAL', f"{stats_df['Signal'].sum():.2f}"]
+    for group in background_groups.keys():
+        total_row.append(f"{stats_df[group].sum():.2f}")
+    total_row.extend([
+        f"{stats_df['Total_Bkg'].sum():.2f}",
+        f"{stats_df['Signal'].sum() / stats_df['Total_Bkg'].sum():.4f}",
+        f"{stats_df['Signal'].sum() / np.sqrt(stats_df['Total_Bkg'].sum()):.3f}"
+    ])
+    table_data.append(total_row)
+    
+    # Create table
+    table = ax.table(cellText=table_data, colLabels=headers, cellLoc='center', loc='center',
+                     colWidths=[0.06] + [0.08]*len(background_groups) + [0.08, 0.08, 0.08, 0.08])
+    
+    table.auto_set_font_size(False)
+    table.set_fontsize(9)
+    table.scale(1, 2)
+    
+    # Style header
+    for i in range(len(headers)):
+        table[(0, i)].set_facecolor('#3498db')
+        table[(0, i)].set_text_props(weight='bold', color='white')
+    
+    # Style total row
+    for i in range(len(headers)):
+        table[(len(table_data), i)].set_facecolor('#95a5a6')
+        table[(len(table_data), i)].set_text_props(weight='bold')
+    
+    # Alternate row colors
+    for i in range(1, len(table_data)):
+        for j in range(len(headers)):
+            if i % 2 == 0:
+                table[(i, j)].set_facecolor('#ecf0f1')
+    
+    plt.title(f'Detailed Bin Statistics - {method_name}', fontsize=14, fontweight='bold', pad=20)
+    
+    # Save
+    filename = f"statistics_table_{method_name.lower().replace(' ', '_').replace('/', '_').replace('(', '').replace(')', '')}.png"
+    filepath = os.path.join(output_dir, filename)
+    plt.savefig(filepath, dpi=300, bbox_inches='tight')
+    print(f"✅ Saved: {filepath}")
+    plt.close()
+    
+    # Also save as CSV
+    csv_filename = f"statistics_table_{method_name.lower().replace(' ', '_').replace('/', '_').replace('(', '').replace(')', '')}.csv"
+    csv_filepath = os.path.join(output_dir, csv_filename)
+    stats_df.to_csv(csv_filepath, index=False, float_format='%.4f')
+    print(f"✅ Saved: {csv_filepath}")
+
+def plot_signal_to_background_ratio(bins, signal_events, background_by_group, method_name, output_dir):
+    """Plot S/B and S/√B per bin"""
+    n_bins = len(bins)
+    x = np.arange(n_bins)
+    
+    total_background = np.array([sum(background_by_group[g][i] for g in background_groups) 
+                                 for i in range(n_bins)])
+    
+    s_over_b = np.divide(signal_events, total_background, 
+                        out=np.zeros_like(signal_events), where=total_background!=0)
+    s_over_sqrt_b = np.divide(signal_events, np.sqrt(total_background), 
+                              out=np.zeros_like(signal_events), where=total_background!=0)
+    
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(12, 8), sharex=True)
+    
+    # S/B plot
+    ax1.bar(x, s_over_b, width=0.8, color='#3498db', edgecolor='black', linewidth=0.5)
+    ax1.set_ylabel('S/B', fontsize=12, fontweight='bold')
+    ax1.set_title(f'Signal-to-Background Metrics - {method_name}', fontsize=14, fontweight='bold')
+    ax1.grid(True, alpha=0.3, linestyle='--', axis='y')
+    
+    # S/√B plot
+    ax2.bar(x, s_over_sqrt_b, width=0.8, color='#e74c3c', edgecolor='black', linewidth=0.5)
+    ax2.set_ylabel('S/√B', fontsize=12, fontweight='bold')
+    ax2.set_xlabel('Bin Number', fontsize=12, fontweight='bold')
+    ax2.set_xticks(x)
+    ax2.set_xticklabels([f'{int(b)}' for b in bins])
+    ax2.grid(True, alpha=0.3, linestyle='--', axis='y')
+    
+    plt.tight_layout()
+    
+    # Save
+    filename = f"significance_per_bin_{method_name.lower().replace(' ', '_').replace('/', '_').replace('(', '').replace(')', '')}.png"
+    filepath = os.path.join(output_dir, filename)
+    plt.savefig(filepath, dpi=300, bbox_inches='tight')
+    print(f"✅ Saved: {filepath}")
+    plt.close()
+
+# ------------------ MAIN ------------------
+def main():
+    print("="*60)
+    print("BINNED DATA VISUALIZATION")
+    print("="*60)
+    
+    # Find all binned pickle files
+    binned_dir = "binnedData"
+    if not os.path.exists(binned_dir):
+        print(f"❌ Error: Directory '{binned_dir}' not found!")
+        print("   Run the binning script first.")
+        return
+    
+    pkl_files = [f for f in os.listdir(binned_dir) if f.endswith('.pkl')]
+    
+    if not pkl_files:
+        print(f"❌ Error: No .pkl files found in '{binned_dir}'!")
+        return
+    
+    print(f"\nFound {len(pkl_files)} binned data file(s):")
+    for i, f in enumerate(pkl_files, 1):
+        print(f"  {i}. {f}")
+    
+    print(f"\n{'='*60}")
+    print("Generating plots for all methods...")
+    print(f"{'='*60}\n")
+    
+    for pkl_file in pkl_files:
+        pkl_path = os.path.join(binned_dir, pkl_file)
+        
+        # Extract method name from filename
+        method_name = pkl_file.replace('bdt_binned_', '').replace('_5class.pkl', '').replace('_', ' ').title()
+        
+        print(f"\n📊 Processing: {method_name}")
+        print("-"*60)
+        
+        # Load data
+        df = load_binned_data(pkl_path)
+        print(f"   Loaded {len(df)} rows, {df['bin_id'].nunique()} bins")
+        
+        # Prepare data
+        bins, signal_events, background_by_group = prepare_data_for_plotting(df)
+        
+        # Generate plots
+        print(f"   Generating plots...")
+        plot_stacked_histogram(bins, signal_events, background_by_group, method_name, output_dir)
+        plot_log_scale_histogram(bins, signal_events, background_by_group, method_name, output_dir)
+        plot_signal_to_background_ratio(bins, signal_events, background_by_group, method_name, output_dir)
+        create_statistics_table(df, method_name, output_dir)
+        
+        print(f"   ✅ Complete for {method_name}\n")
+    
+    print("="*60)
+    print(f"✅ ALL PLOTS GENERATED!")
+    print(f"   Output directory: {output_dir}/")
+    print("="*60)
+
+if __name__ == "__main__":
+    main()
