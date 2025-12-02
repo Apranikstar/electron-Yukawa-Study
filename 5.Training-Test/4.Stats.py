@@ -91,7 +91,7 @@ def calculate_simple_significance(signal, background):
     """Z = S/√B"""
     if background <= 0:
         return 0.0
-    return signal / np.sqrt(background)
+    return signal / np.sqrt(signal+background)
 
 def calculate_asimov_significance(signal, background):
     """Asimov formula: Z = √(2((S+B)ln(1+S/B) - S))"""
