@@ -215,6 +215,7 @@ class RDFanalysis:
         df = df.Define("Jets_p4", "JetConstituentsUtils::compute_tlv_jets({})".format(jetClusteringHelper.jets))
         df = df.Define("Jets_InMa", "JetConstituentsUtils::InvariantMass(Jets_p4[0], Jets_p4[1])")
         df = df.Filter("Jets_InMa < 52.85")
+        df = df.Filter("Jets_InMa > 4")
 
         # Tagger inference
         df = jetFlavourHelper.inference(weaver_preproc, weaver_model, df)
@@ -227,7 +228,8 @@ class RDFanalysis:
         df = df.Define("Jets_charge", "JetConstituentsUtils::get_charge({})".format(jetClusteringHelper.constituents))
         df = df.Define("Jet_nconst0", "jet_nconst[0]")
         df = df.Define("Jet_nconst1", "jet_nconst[1]")
-
+        df = df.Filter("Jet_nconst0 > 2")
+        df = df.Filter("Jet_nconst1 > 2")
 
 
         # Jet kinematics (jet 1)
