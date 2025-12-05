@@ -17,31 +17,7 @@ selection = 0.2
 # -----------------------------
 
 processList = {
-    # xsecs need to be scaled by 280/989 ...for xsec of ee -> H ...
-
-    # Semileptonic processes
-    "wzp6_ee_Henueqq_ecm125": {"fraction": 1},
-    "wzp6_ee_Hqqenue_ecm125": {"fraction": 1},
-    "wzp6_ee_Hmunumuqq_ecm125": {"fraction": 1},
-    "wzp6_ee_Hqqmunumu_ecm125": {"fraction": 1},
-    "wzp6_ee_Htaunutauqq_ecm125": {"fraction": 1},
-    "wzp6_ee_Hqqtaunutau_ecm125": {"fraction": 1},
-    "wzp6_ee_taunutauqq_ecm125": {"fraction": 1},
-    "wzp6_ee_tautauqq_ecm125": {"fraction": 1},
-    "wzp6_ee_enueqq_ecm125": {"fraction": 1},
-    "wzp6_ee_eeqq_ecm125": {"fraction": 1},
-    "wzp6_ee_munumuqq_ecm125": {"fraction": 1},
-    "wzp6_ee_mumuqq_ecm125": {"fraction": 1},
-
-    # Fully leptonic Processes
-    "wzp6_ee_Htautau_ecm125": {"fraction": 1},
-    "wzp6_ee_Hllnunu_ecm125": {"fraction": 1},
-    "wzp6_ee_eenunu_ecm125": {"fraction": 1},
-    "wzp6_ee_mumununu_ecm125": {"fraction": 1},
-    "wzp6_ee_tautaununu_ecm125": {"fraction": 1},
-    "wzp6_ee_l1l2nunu_ecm125": {"fraction": 1},
     "wzp6_ee_tautau_ecm125": {"fraction": 1},
-
     # Fully hadronic Processes
     "wzp6_ee_Hgg_ecm125": {"fraction": 1},
     "wzp6_ee_Hbb_ecm125": {"fraction": 1},
@@ -49,7 +25,7 @@ processList = {
     "p8_ee_ZZ_4tau_ecm125": {"fraction": 1},
 }
 
-outputDir = "/eos/experiment/fcc/ee/analyses/case-studies/higgs/electron_yukawa/DataGen/on-shell-electron/"
+outputDir = "/eos/experiment/fcc/ee/analyses/case-studies/higgs/electron_yukawa/DataGenReduced/on-shell-electron/"
 inputDir = "/eos/experiment/fcc/ee/generation/DelphesEvents/winter2023/IDEA"
 nCPUS = -1
 includePaths = ["../src/functions.h", "../src/GEOFunctions.h", "../src/MELAFunctions.h","../src/SortJets.h" ]
@@ -152,6 +128,7 @@ class RDFanalysis:
 
         # Require exactly one isolated electron
         df = df.Filter(" Iso_Electrons_No == 1 ")
+        df = df.Filter(" IsoMuonNum == 0 ")
 
         # Isolated lepton 4-vectors
         df = df.Define("IsoElectron_4p", "FCCAnalyses::ReconstructedParticle::get_tlv(electrons_sel_iso)")
@@ -161,16 +138,9 @@ class RDFanalysis:
 
         # Isolated photons info
         df = df.Define("IsoPhotons_4p", "FCCAnalyses::ReconstructedParticle::get_tlv(photons_sel_iso)")
-        df = df.Define("Iso_Photon_P", "IsoPhotons_4p[0].P()")
-        df = df.Define("Iso_Photon_Pt", "IsoPhotons_4p[0].Pt()")
-        df = df.Define("Iso_Photon_Eta", "IsoPhotons_4p[0].Eta()")
         df = df.Define("Iso_Photon_Phi", "IsoPhotons_4p[0].Phi()")
-        df = df.Define("Iso_Photon_Rapidity", "IsoPhotons_4p[0].Rapidity()")
         df = df.Define("Iso_Photon_Theta", "IsoPhotons_4p[0].Theta()")
-        df = df.Define("Iso_Photon_M", "IsoPhotons_4p[0].M()")
-        df = df.Define("Iso_Photon_Mt", "IsoPhotons_4p[0].Mt()")
         df = df.Define("Iso_Photon_E", "IsoPhotons_4p[0].E()")
-        df = df.Define("Iso_Photon_Et", "IsoPhotons_4p[0].Et()")
         df = df.Define("Iso_Photon_CosTheta", "IsoPhotons_4p[0].CosTheta()")
         df = df.Define("Iso_Photon_CosPhi", "cos(Iso_Photon_Phi)")
         df = df.Define("Iso_Photons_No", "photons_sel_iso.size()")
@@ -178,35 +148,19 @@ class RDFanalysis:
         # Isolated electron components & properties
         df = df.Define("IsoElectron_3p", "IsoElectron_4p[0].Vect()")
         df = df.Define("Iso_Electron_P", "IsoElectron_4p[0].P()")
-        df = df.Define("Iso_Electron_Pt", "IsoElectron_4p[0].Pt()")
-        df = df.Define("Iso_Electron_Eta", "IsoElectron_4p[0].Eta()")
         df = df.Define("Iso_Electron_Phi", "IsoElectron_4p[0].Phi()")
-        df = df.Define("Iso_Electron_Rapidity", "IsoElectron_4p[0].Rapidity()")
         df = df.Define("Iso_Electron_Theta", "IsoElectron_4p[0].Theta()")
-        df = df.Define("Iso_Electron_M", "IsoElectron_4p[0].M()")
-        df = df.Define("Iso_Electron_Mt", "IsoElectron_4p[0].Mt()")
         df = df.Define("Iso_Electron_E", "IsoElectron_4p[0].E()")
-        df = df.Define("Iso_Electron_Et", "IsoElectron_4p[0].Et()")
         df = df.Define("Iso_Electron_CosTheta", "IsoElectron_4p[0].CosTheta()")
         df = df.Define("Iso_Electron_CosPhi", "TMath::Cos(Iso_Electron_Phi)")
         df = df.Define("Iso_Electron_Charge", "FCCAnalyses::ReconstructedParticle::get_charge(electrons_sel_iso)[0]")
 
         # Missing energy repeated derivatives (kept for compatibility)
         df = df.Define("Missing_P", "MissingE_4p[0].P()")
-        df = df.Define("Missing_Eta", "MissingE_4p[0].Eta()")
-        df = df.Define("Missing_Phi", "MissingE_4p[0].Phi()")
-        df = df.Define("Missing_Rapidity", "MissingE_4p[0].Rapidity()")
-        df = df.Define("Missing_Theta", "MissingE_4p[0].Theta()")
-        df = df.Define("Missing_M", "MissingE_4p[0].M()")
-        df = df.Define("Missing_Mt", "MissingE_4p[0].Mt()")
         df = df.Define("Missing_E", "MissingE_4p[0].E()")
-        df = df.Define("Missing_Et", "MissingE_4p[0].Et()")
-        df = df.Define("Missing_CosTheta", "MissingE_4p[0].CosTheta()")
-        df = df.Define("Missing_CosPhi", "TMath::Cos(Missing_Phi)")
 
         # Combined masses
         df = df.Define("EnuM", " (MissingE_4p[0]+IsoElectron_4p[0]).M()")
-        # df = df.Define("MunuM" , " (MissingE_4p[0]+IsoMuon_4p[0]).M()")
 
         # Create collections with particles removed
         df = df.Define(
@@ -271,45 +225,18 @@ class RDFanalysis:
         df = df.Define("d23", "std::sqrt(JetClusteringUtils::get_exclusive_dmerge(_jet_N2, 2))")
         df = df.Define("d34", "std::sqrt(JetClusteringUtils::get_exclusive_dmerge(_jet_N2, 3))")
         df = df.Define("Jets_charge", "JetConstituentsUtils::get_charge({})".format(jetClusteringHelper.constituents))
-        df = df.Define("Jet_nconst0", "jet_nconst")
-        df = df.Define("Jet_nconst1", "jet_nconst[0]")
+        df = df.Define("Jet_nconst0", "jet_nconst[0]")
+        df = df.Define("Jet_nconst1", "jet_nconst[1]")
 
-        # MC event primary vertex
-        df = df.Define("MC_PrimaryVertex", "FCCAnalyses::MCParticle::get_EventPrimaryVertex(21)( Particle )")
-        df = df.Define(
-            "MC_PrimaryVertex_TLorentz",
-            "TLorentzVector(MC_PrimaryVertex.X(), MC_PrimaryVertex.Y(), MC_PrimaryVertex.Z(), 0.0)",
-        )
 
-        # Displacements
-        df = df.Define(
-            "displacementdz0",
-            "FCCAnalyses::ReconstructedParticle2Track::XPtoPar_dz(ReconstructedParticles,EFlowTrack_1, MC_PrimaryVertex_TLorentz,magFieldBz[0])[0]",
-        )
-        df = df.Define(
-            "displacementdxy0",
-            "FCCAnalyses::ReconstructedParticle2Track::XPtoPar_dxy(ReconstructedParticles,EFlowTrack_1, MC_PrimaryVertex_TLorentz,magFieldBz[0])[0]",
-        )
-        df = df.Define(
-            "displacementdz1",
-            "FCCAnalyses::ReconstructedParticle2Track::XPtoPar_dz(ReconstructedParticles,EFlowTrack_1, MC_PrimaryVertex_TLorentz,magFieldBz[0])[1]",
-        )
-        df = df.Define(
-            "displacementdxy1",
-            "FCCAnalyses::ReconstructedParticle2Track::XPtoPar_dxy(ReconstructedParticles,EFlowTrack_1, MC_PrimaryVertex_TLorentz,magFieldBz[0])[1]",
-        )
 
         # Jet kinematics (jet 1)
         df = df.Define("Jet1_P3", "Jets_p4[0].Vect()")
         df = df.Define("Jet1_P", "Jets_p4[0].P()")
-        df = df.Define("Jet1_Pt", "Jets_p4[0].Pt()")
         df = df.Define("Jet1_Eta", "Jets_p4[0].Eta()")
-        df = df.Define("Jet1_Rapidity", "Jets_p4[0].Rapidity()")
         df = df.Define("Jet1_Phi", "Jets_p4[0].Phi()")
         df = df.Define("Jet1_M", "Jets_p4[0].M()")
-        df = df.Define("Jet1_Mt", "Jets_p4[0].Mt()")
         df = df.Define("Jet1_E", "Jets_p4[0].E()")
-        df = df.Define("Jet1_Et", "Jets_p4[0].Et()")
         df = df.Define("Jet1_Theta", "Jets_p4[0].Theta()")
         df = df.Define("Jet1_CosTheta", "Jets_p4[0].CosTheta()")
         df = df.Define("Jet1_CosPhi", "TMath::Cos(Jet1_Phi)")
@@ -317,21 +244,17 @@ class RDFanalysis:
         # Jet kinematics (jet 2)
         df = df.Define("Jet2_P3", "Jets_p4[1].Vect()")
         df = df.Define("Jet2_P", "Jets_p4[1].P()")
-        df = df.Define("Jet2_Pt", "Jets_p4[1].Pt()")
         df = df.Define("Jet2_Eta", "Jets_p4[1].Eta()")
-        df = df.Define("Jet2_Rapidity", "Jets_p4[1].Rapidity()")
         df = df.Define("Jet2_Phi", "Jets_p4[1].Phi()")
         df = df.Define("Jet2_M", "Jets_p4[1].M()")
-        df = df.Define("Jet2_Mt", "Jets_p4[1].Mt()")
         df = df.Define("Jet2_E", "Jets_p4[1].E()")
-        df = df.Define("Jet2_Et", "Jets_p4[1].Et()")
         df = df.Define("Jet2_Theta", "Jets_p4[1].Theta()")
         df = df.Define("Jet2_CosTheta", "Jets_p4[1].CosTheta()")
         df = df.Define("Jet2_CosPhi", "TMath::Cos(Jet2_Phi)")
 
         # Jet comparisons and event-level values
-        df = df.Define("Max_JetsPT", "TMath::Max(Jets_p4[0].Pt(),Jets_p4[1].Pt())")
-        df = df.Define("Min_JetsPT", "TMath::Min(Jets_p4[0].Pt(),Jets_p4[1].Pt())")
+        df = df.Define("Max_JetsP", "TMath::Max(Jets_p4[0].Pt(),Jets_p4[1].P())")
+        df = df.Define("Min_JetsP", "TMath::Min(Jets_p4[0].Pt(),Jets_p4[1].P())")
         df = df.Define("Max_JetsE", "TMath::Max(Jets_p4[0].E(),Jets_p4[1].E())")
         df = df.Define("Min_JetsE", "TMath::Min(Jets_p4[0].E(),Jets_p4[1].E())")
         df = df.Define("Jet1_charge", "ROOT::VecOps::Sum(Jets_charge[0])")
@@ -350,18 +273,6 @@ class RDFanalysis:
         df = df.Define("Max_DelPhiLJets", "TMath::Max(ILjet1_delphi,ILjet2_delphi)")
         df = df.Define("Min_DelPhiLJets", "TMath::Min(ILjet1_delphi,ILjet2_delphi)")
 
-        df = df.Define("Jets_deleta", "TMath::Abs(Jet1_Eta - Jet2_Eta)")
-        df = df.Define("ILjet1_deleta", "TMath::Abs(Jet1_Eta - Iso_Electron_Eta)")
-        df = df.Define("ILjet2_deleta", "TMath::Abs(Jet2_Eta - Iso_Electron_Eta)")
-        df = df.Define("Max_DelEtaLJets", "TMath::Max(ILjet1_deleta,ILjet2_deleta)")
-        df = df.Define("Min_DelEtaLJets", "TMath::Min(ILjet1_deleta,ILjet2_deleta)")
-
-        df = df.Define("Jets_delrapi", "TMath::Abs(Jet1_Rapidity - Jet2_Rapidity)")
-        df = df.Define("ILjet1_delrapi", "TMath::Abs(Iso_Electron_Rapidity - Jet1_Rapidity)")
-        df = df.Define("ILjet2_delrapi", "TMath::Abs(Iso_Electron_Rapidity - Jet2_Rapidity)")
-        df = df.Define("Max_DelyLJets", "TMath::Max(ILjet1_delrapi,ILjet2_delrapi)")
-        df = df.Define("Min_DelyLJets", "TMath::Min(ILjet1_delrapi,ILjet2_delrapi)")
-
         df = df.Define("Jets_deltheta", "Jet1_Theta - Jet2_Theta")
         df = df.Define("Jets_angle", "Jets_p4[0].Angle(Jets_p4[1].Vect())")
         df = df.Define("ILjet1_angle", "IsoElectron_4p[0].Angle(Jets_p4[0].Vect())")
@@ -372,29 +283,15 @@ class RDFanalysis:
         df = df.Define("Max_CosLJets", "TMath::Max(ILjet1_cosangle,ILjet2_cosangle)")
         df = df.Define("Min_CosLJets", "TMath::Min(ILjet1_cosangle,ILjet2_cosangle)")
 
-        df = df.Define("HT", "Iso_Electron_Pt + Jet1_Pt + Jet2_Pt")
         df = df.Define("Event_IM", "(Jets_p4[0] + Jets_p4[1] + MissingE_4p[0] + IsoElectron_4p[0]).M()")
 
         # Masses and combinations
         df = df.Define("LJJ_M", "(Jets_p4[0] + Jets_p4[1] + IsoElectron_4p[0]).M()")
-        df = df.Define("LJJ_Mt", "(Jets_p4[0] + Jets_p4[1] + IsoElectron_4p[0]).Mt()")
         df = df.Define("LJ1_M", "(Jets_p4[0] + IsoElectron_4p[0]).M()")
-        df = df.Define("LJ1_Mt", "(Jets_p4[0] + IsoElectron_4p[0]).Mt()")
         df = df.Define("LJ2_M", "(Jets_p4[1] + IsoElectron_4p[0]).M()")
-        df = df.Define("LJ2_Mt", "(Jets_p4[1] + IsoElectron_4p[0]).Mt()")
-        df = df.Define("Lnu_M", "(MissingE_4p[0] + IsoElectron_4p[0]).M()")
         df = df.Define("JJ_M", "(Jets_p4[0] + Jets_p4[1]).M()")
-        df = df.Define("JJ_Mt", "(Jets_p4[0] + Jets_p4[1]).Mt()")
         df = df.Define("JJ_E", "(Jets_p4[0] + Jets_p4[1]).E()")
 
-        # PT sums and rapidities
-        df = df.Define("lj1_PT", "Iso_Electron_Pt + Jet1_Pt")
-        df = df.Define("lj2_PT", "Iso_Electron_Pt + Jet2_Pt")
-        df = df.Define("jj_PT", "Jet1_Pt + Jet2_Pt")
-        df = df.Define("ljj_y", "(Jets_p4[0] + Jets_p4[1] + IsoElectron_4p[0]).Rapidity()")
-        df = df.Define("jj_y", "(Jets_p4[0] + Jets_p4[1]).Rapidity()")
-        df = df.Define("lj1_y", "(Jets_p4[0] + IsoElectron_4p[0]).Rapidity()")
-        df = df.Define("lj2_y", "(Jets_p4[1] + IsoElectron_4p[0]).Rapidity()")
 
         df = df.Define("ljj_Phi", "(Jets_p4[0] + Jets_p4[1] + IsoElectron_4p[0]).Phi()")
         df = df.Define("jj_Phi", "(Jets_p4[0] + Jets_p4[1]).Phi()")
@@ -432,53 +329,24 @@ class RDFanalysis:
         df = df.Define("Sphericity", "FCCAnalyses::GEOFunctions::EventGeoFunctions::calculateSphericity(Jet1_P3,Jet2_P3,IsoElectron_3p)")
         df = df.Define("ASphericity", "FCCAnalyses::GEOFunctions::EventGeoFunctions::calculateAsphericity(Jet1_P3,Jet2_P3,IsoElectron_3p)")
 
-        df = df.Define("RP_px",          "ReconstructedParticle::get_px(ReconstructedParticles)")
-        df = df.Define("RP_py",          "ReconstructedParticle::get_py(ReconstructedParticles)")
-        df = df.Define("RP_pz",          "ReconstructedParticle::get_pz(ReconstructedParticles)")
-        df = df.Define("RP_e",           "ReconstructedParticle::get_e(ReconstructedParticles)")
-  
-        df=  df.Define('EVT_thrust',     'Algorithms::minimize_thrust("Minuit2","Migrad")(RP_px, RP_py, RP_pz)')
-        df = df.Define('RP_thrustangle', 'Algorithms::getAxisCosTheta(EVT_thrust, RP_px, RP_py, RP_pz)')
-        df = df.Define('EVT_thrust_x',   "EVT_thrust.at(0)")
-        df = df.Define('EVT_thrust_y',   "EVT_thrust.at(1)")
-        df = df.Define('EVT_thrust_z',   "EVT_thrust.at(2)")
-        df = df.Define('EVT_thrust_val', "EVT_thrust.at(3)")
-
-        df = df.Define('EVT_sphericity',     'Algorithms::minimize_sphericity("Minuit2","Migrad")(RP_px, RP_py, RP_pz)')
-        df = df.Define('EVT_sphericity_x',   "EVT_sphericity.at(0)")
-        df = df.Define('EVT_sphericity_y',   "EVT_sphericity.at(1)")
-        df = df.Define('EVT_sphericity_z',   "EVT_sphericity.at(2)")
-        df = df.Define('EVT_sphericity_val', "EVT_sphericity.at(3)")
-        df = df.Define('RP_sphericityangle', 'Algorithms::getAxisCosTheta(EVT_sphericity, RP_px, RP_py, RP_pz)')
-
-        df = df.Define('RP_hemis0_mass',   "Algorithms::getAxisMass(0)(RP_thrustangle, RP_e, RP_px, RP_py, RP_pz)")
-        df = df.Define('RP_hemis1_mass',   "Algorithms::getAxisMass(1)(RP_thrustangle, RP_e, RP_px, RP_py, RP_pz)")
-
-        df = df.Define("RP_total_mass",    "Algorithms::getMass(ReconstructedParticles)")
-        # Flavour-tagger scores (per jet)
-        df = df.Define("scoreG1", "recojet_isG[0]")
-        df = df.Define("scoreG2", "recojet_isG[1]")
-        df = df.Define("scoreU1", "recojet_isU[0]")
-        df = df.Define("scoreU2", "recojet_isU[1]")
-        df = df.Define("scoreS1", "recojet_isS[0]")
-        df = df.Define("scoreS2", "recojet_isS[1]")
-        df = df.Define("scoreC1", "recojet_isC[0]")
-        df = df.Define("scoreC2", "recojet_isC[1]")
-        df = df.Define("scoreB1", "recojet_isB[0]")
-        df = df.Define("scoreB2", "recojet_isB[1]")
-        df = df.Define("scoreT1", "recojet_isTAU[0]")
-        df = df.Define("scoreT2", "recojet_isTAU[1]")
-        df = df.Define("scoreD1", "recojet_isD[0]")
-        df = df.Define("scoreD2", "recojet_isD[1]")
 
         # Sums of scores
-        df = df.Define("scoreSumG", "recojet_isG[0]+recojet_isG[1]")
-        df = df.Define("scoreSumU", "recojet_isU[0]+recojet_isU[1]")
-        df = df.Define("scoreSumS", "recojet_isS[0]+recojet_isS[1]")
-        df = df.Define("scoreSumC", "recojet_isC[0]+recojet_isC[1]")
+        df = df.Define("scoreSumUD", "recojet_isU[0]+recojet_isD[1]")
+        df = df.Define("scoreSumDU", "recojet_isD[0]+recojet_isU[1]")
+
+        df = df.Define("scoreSumSC", "recojet_isS[0]+recojet_isC[1]")
+        df = df.Define("scoreSumCS", "recojet_isC[0]+recojet_isS[1]")
+
+        df = df.Define("scoreProdUD", "recojet_isU[0]*recojet_isD[1]")
+        df = df.Define("scoreProdDU", "recojet_isD[0]*recojet_isU[1]")
+
+        df = df.Define("scoreProdSC", "recojet_isS[0]*recojet_isC[1]")
+        df = df.Define("scoreProdCS", "recojet_isC[0]*recojet_isS[1]")
+
+
+
         df = df.Define("scoreSumB", "recojet_isB[0]+recojet_isB[1]")
         df = df.Define("scoreSumT", "recojet_isTAU[0]+recojet_isTAU[1]")
-        df = df.Define("scoreSumD", "recojet_isD[0]+recojet_isD[1]")
 
         # Products of scores
         df = df.Define("scoreMultiplyG", "recojet_isG[0]*recojet_isG[1]")
@@ -496,110 +364,67 @@ class RDFanalysis:
         """Return a list of all branches defined in analysers()."""
         branchList = [
 
-            "IsoMuonNum",
-            "Missing_Pt",
-            "Iso_Photon_P",
-            "Iso_Photon_Pt",
-            "Iso_Photon_Eta",
             "Iso_Photon_Phi",
-            "Iso_Photon_Rapidity",
             "Iso_Photon_Theta",
-            "Iso_Photon_M",
-            "Iso_Photon_Mt",
             "Iso_Photon_E",
-            "Iso_Photon_Et",
             "Iso_Photon_CosTheta",
             "Iso_Photon_CosPhi",
             "Iso_Photons_No",
-            "IsoElectron_3p",
+
             "Iso_Electron_P",
-            "Iso_Electron_Pt",
-            "Iso_Electron_Eta",
             "Iso_Electron_Phi",
-            "Iso_Electron_Rapidity",
             "Iso_Electron_Theta",
-            "Iso_Electron_M",
-            "Iso_Electron_Mt",
             "Iso_Electron_E",
-            "Iso_Electron_Et",
             "Iso_Electron_CosTheta",
             "Iso_Electron_CosPhi",
             "Iso_Electrons_No",
-            "Iso_Electron_Charge",
+
             "Missing_P",
-            "Missing_Eta",
-            "Missing_Phi",
-            "Missing_Rapidity",
-            "Missing_Theta",
-            "Missing_M",
-            "Missing_Mt",
             "Missing_E",
-            "Missing_Et",
-            "Missing_CosTheta",
-            "Missing_CosPhi",
+            "Missing_Pt",
+
             "EnuM",
             "Jets_InMa",
+
             "d23",
             "d34",
-            "Jets_charge",
+
             "Jet_nconst0",
             "Jet_nconst1",
-            "displacementdz0",
-            "displacementdxy0",
-            "displacementdz1",
-            "displacementdxy1",
-            "Jet1_P3",
+            
             "Jet1_P",
-            "Jet1_Pt",
-            "Jet1_Eta",
-            "Jet1_Rapidity",
             "Jet1_Phi",
             "Jet1_M",
-            "Jet1_Mt",
             "Jet1_E",
-            "Jet1_Et",
             "Jet1_Theta",
             "Jet1_CosTheta",
             "Jet1_CosPhi",
-            "Jet2_P3",
+
             "Jet2_P",
-            "Jet2_Pt",
-            "Jet2_Eta",
-            "Jet2_Rapidity",
             "Jet2_Phi",
             "Jet2_M",
-            "Jet2_Mt",
             "Jet2_E",
-            "Jet2_Et",
             "Jet2_Theta",
             "Jet2_CosTheta",
             "Jet2_CosPhi",
-            "Max_JetsPT",
-            "Min_JetsPT",
+
             "Max_JetsE",
             "Min_JetsE",
             "Jet1_charge",
             "Jet2_charge",
+
             "Jets_delR",
             "ILjet1_delR",
             "ILjet2_delR",
             "Max_DelRLJets",
             "Min_DelRLJets",
+
             "Jets_delphi",
             "ILjet1_delphi",
             "ILjet2_delphi",
             "Max_DelPhiLJets",
             "Min_DelPhiLJets",
-            "Jets_deleta",
-            "ILjet1_deleta",
-            "ILjet2_deleta",
-            "Max_DelEtaLJets",
-            "Min_DelEtaLJets",
-            "Jets_delrapi",
-            "ILjet1_delrapi",
-            "ILjet2_delrapi",
-            "Max_DelyLJets",
-            "Min_DelyLJets",
+
             "Jets_deltheta",
             "Jets_angle",
             "ILjet1_angle",
@@ -609,27 +434,17 @@ class RDFanalysis:
             "ILjet2_cosangle",
             "Max_CosLJets",
             "Min_CosLJets",
-            "HT",
+
             "Event_IM",
             "LJJ_M",
-            "LJJ_Mt",
             "LJ1_M",
-            "LJ1_Mt",
             "LJ2_M",
-            "LJ2_Mt",
-            "Lnu_M",
             "JJ_M",
-            "JJ_Mt",
             "JJ_E",
-            "lj1_PT",
-            "lj2_PT",
-            "jj_PT",
-            "ljj_y",
-            "jj_y",
-            "lj1_y",
-            "lj2_y",
+
             "ljj_Phi",
             "jj_Phi",
+
             "Wl_M",
             "Wl_Theta",
             "Shell_M",
@@ -637,7 +452,7 @@ class RDFanalysis:
             "CosTheta_MaxjjW",
             "CosTheta_MinjjW",
             "expD",
-            "mela",
+
             "Phi",
             "CosPhi",
             "Phi1",
@@ -655,43 +470,6 @@ class RDFanalysis:
             "Sphericity",
             "ASphericity",
 
-            "EVT_thrust",
-            "RP_thrustangle",
-            "EVT_thrust_x",
-            "EVT_thrust_y",
-            "EVT_thrust_z",
-            "EVT_thrust_val",
-            "EVT_sphericity",
-            "EVT_sphericity_x",
-            "EVT_sphericity_y",
-            "EVT_sphericity_z",
-            "EVT_sphericity_val",
-            "RP_sphericityangle",
-            "RP_hemis0_mass",
-            "RP_hemis1_mass",
-            "RP_total_mass",
-
-            "scoreG1",
-            "scoreG2",
-            "scoreU1",
-            "scoreU2",
-            "scoreS1",
-            "scoreS2",
-            "scoreC1",
-            "scoreC2",
-            "scoreB1",
-            "scoreB2",
-            "scoreT1",
-            "scoreT2",
-            "scoreD1",
-            "scoreD2",
-            "scoreSumG",
-            "scoreSumU",
-            "scoreSumS",
-            "scoreSumC",
-            "scoreSumB",
-            "scoreSumT",
-            "scoreSumD",
             "scoreMultiplyG",
             "scoreMultiplyU",
             "scoreMultiplyS",
@@ -699,5 +477,25 @@ class RDFanalysis:
             "scoreMultiplyB",
             "scoreMultiplyT",
             "scoreMultiplyD",
+
+            "scoreSumUD",
+            "scoreSumDU",
+            "scoreSumSC",
+            "scoreSumCS",
+            "scoreSumB",
+            "scoreSumT",
+
+            "scoreProdUD",
+            "scoreProdDU",
+            "scoreProdSC",
+            "scoreProdCS",
+
+
+
+
+
+
+
         ]
         return branchList
+    
