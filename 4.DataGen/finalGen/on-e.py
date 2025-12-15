@@ -52,7 +52,7 @@ processList = {
 outputDir = "/eos/experiment/fcc/ee/analyses/case-studies/higgs/electron_yukawa/FinalDataGen/on-shell-electron/"
 inputDir = "/eos/experiment/fcc/ee/generation/DelphesEvents/winter2023/IDEA"
 nCPUS = -1
-includePaths = ["../src/functions.h", "../src/GEOFunctions.h", "../src/MELAFunctions.h","../src/SortJets.h" ]
+includePaths = ["../../src/functions.h", "../../src/GEOFunctions.h", "../../src/MELAFunctions.h","../../src/SortJets.h" ]
 
 model_name = "fccee_flavtagging_edm4hep_wc"
 
