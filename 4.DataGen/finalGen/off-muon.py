@@ -39,7 +39,7 @@ class Analysis():
             "wzp6_ee_tautauqq_ecm125": {"fraction": 1},
             "wzp6_ee_enueqq_ecm125": {"fraction": 1},
             "wzp6_ee_eeqq_ecm125": {"fraction": 1},
-            "wzp6_ee_munumuqq_ecm125": {"fraction": 1},
+            "wzp6_ee_munumuqq_ecm125": {"fraction": 1,'chunks': 2},
             "wzp6_ee_mumuqq_ecm125": {"fraction": 1},
             # Fully leptonic Processes
             #"wzp6_ee_Htautau_ecm125": {"fraction": 1},
