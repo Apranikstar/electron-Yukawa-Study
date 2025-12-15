@@ -67,7 +67,7 @@ class Analysis():
 
         # Optional: number of threads
         self.n_threads = 32
-
+        self.run_batch = True
         # Optional: batch queue name
         self.batch_queue = 'testmatch'
 
