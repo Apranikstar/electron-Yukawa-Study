@@ -297,8 +297,8 @@ class Analysis():
         dframe2 = dframe2.Define("Jets_4Vec", 
                                  "JetConstituentsUtils::compute_tlv_jets({})".format(self.jetClusteringHelper.jets))
         dframe2 = dframe2.Define("DiJet_InvariantMass", "JetConstituentsUtils::InvariantMass(Jets_4Vec[0], Jets_4Vec[1])")
-        dframe2 = dframe2.Filter("DiJet_InvariantMass < 52.85")
-        dframe2 = dframe2.Filter("DiJet_InvariantMass > 4")
+        dframe2 = dframe2.Filter("DiJet_InvariantMass > 52.85")
+        #dframe2 = dframe2.Filter("DiJet_InvariantMass > 4")
 
         # ===========================
         # Tagger inference
