@@ -75,7 +75,7 @@ class Analysis():
         self.comp_group = 'group_u_FCC.local_gen'
 
         # Optional: output directory on eos
-        self.output_dir_eos = '/eos/experiment/fcc/ee/analyses/case-studies/higgs/muon_yukawa/FinalRound/off-shell-muon/'
+        self.output_dir_eos = '/eos/experiment/fcc/ee/analyses/case-studies/higgs/electron_yukawa/FinalRound/off-shell-muon/'
 
         # Optional: include paths for custom functions
         self.include_paths = ["../../src/functions.h", "../../src/GEOFunctions.h", 
