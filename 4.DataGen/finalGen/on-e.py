@@ -66,7 +66,7 @@ class Analysis():
         self.analysis_name = 'Electron Yukawa Analysis'
 
         # Optional: number of threads
-        self.n_threads = -1
+        self.n_threads = 32
 
         # Optional: batch queue name
         self.batch_queue = 'testmatch'
