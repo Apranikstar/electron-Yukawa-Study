@@ -69,6 +69,7 @@ class Analysis():
         # Optional: number of threads
         self.n_threads = 32
         self.run_batch = True
+        self.eos_type = 'eospublic'
 
         # Optional: batch queue name
         self.batch_queue = 'testmatch'
