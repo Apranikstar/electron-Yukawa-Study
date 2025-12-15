@@ -24,7 +24,7 @@ class Analysis():
                             help='Maximum delta R for cone isolation.')
         parser.add_argument('--isolation-cut', default=0.2, type=float,
                             help='Isolation selection threshold.')
-        self.ana_args, _ = parser.parse_known_args(cmdline_args['remaining'])
+        self.ana_args, _ = parser.parse_known_args(cmdline_args['unknown'])
 
         # Mandatory: List of processes used in the analysis
         self.process_list = {
@@ -35,32 +35,32 @@ class Analysis():
             "wzp6_ee_Hqqmunumu_ecm125": {"fraction": 1},
             "wzp6_ee_Htaunutauqq_ecm125": {"fraction": 1},
             "wzp6_ee_Hqqtaunutau_ecm125": {"fraction": 1},
-            "wzp6_ee_taunutauqq_ecm125": {"fraction": 1},
-            "wzp6_ee_tautauqq_ecm125": {"fraction": 1},
-            "wzp6_ee_enueqq_ecm125": {"fraction": 1},
-            "wzp6_ee_eeqq_ecm125": {"fraction": 1},
-            "wzp6_ee_munumuqq_ecm125": {"fraction": 1},
-            "wzp6_ee_mumuqq_ecm125": {"fraction": 1},
+            "wzp6_ee_taunutauqq_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_tautauqq_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_enueqq_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_eeqq_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_munumuqq_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_mumuqq_ecm125": {"fraction": 1,'chunks': 10},
             # Fully leptonic Processes
             #"wzp6_ee_Htautau_ecm125": {"fraction": 1},
             #"wzp6_ee_Hllnunu_ecm125": {"fraction": 1},
-            "wzp6_ee_eenunu_ecm125": {"fraction": 1},
-            "wzp6_ee_mumununu_ecm125": {"fraction": 1},
-            "wzp6_ee_tautaununu_ecm125": {"fraction": 1},
-            "wzp6_ee_l1l2nunu_ecm125": {"fraction": 1},
-            "wzp6_ee_tautau_ecm125": {"fraction": 1},
+            "wzp6_ee_eenunu_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_mumununu_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_tautaununu_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_l1l2nunu_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_tautau_ecm125": {"fraction": 1,'chunks': 10},
             # Fully hadronic Processes
             #"wzp6_ee_Hgg_ecm125": {"fraction": 1},
             #"wzp6_ee_Hbb_ecm125": {"fraction": 1},
-            "wzp6_ee_qq_ecm125": {"fraction": 1},
-            "p8_ee_ZZ_4tau_ecm125": {"fraction": 1},
+            "wzp6_ee_qq_ecm125": {"fraction": 1,'chunks': 10},
+            "p8_ee_ZZ_4tau_ecm125": {"fraction": 1,'chunks': 10},
         }
 
         # Mandatory: Production tag
         self.prod_tag = 'FCCee/winter2023/IDEA/'
 
         # Optional: output directory
-        #self.output_dir = 'electron_yukawa/stage1'
+        self.output_dir = '/eos/user/h/hfatehi/electron_yukawa/off/stage1'
 
         # Optional: analysis name
         self.analysis_name = 'Electron Yukawa Analysis'
