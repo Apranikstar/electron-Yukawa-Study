@@ -24,7 +24,7 @@ class Analysis():
                             help='Maximum delta R for cone isolation.')
         parser.add_argument('--isolation-cut', default=0.2, type=float,
                             help='Isolation selection threshold.')
-        self.run_batch = True
+        
         self.ana_args, _ = parser.parse_known_args(cmdline_args['remaining'])
 
         # Mandatory: List of processes used in the analysis
@@ -68,6 +68,7 @@ class Analysis():
 
         # Optional: number of threads
         self.n_threads = 32
+        self.run_batch = True
 
         # Optional: batch queue name
         self.batch_queue = 'testmatch'
