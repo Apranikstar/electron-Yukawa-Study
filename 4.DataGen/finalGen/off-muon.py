@@ -60,7 +60,7 @@ class Analysis():
         self.prod_tag = 'FCCee/winter2023/IDEA/'
 
         # Optional: output directory
-        #self.output_dir = 'muon_yukawa/stage1'
+        self.output_dir = '/eos/user/h/hfatehi/muon_yukawa/off/stage1'
 
         # Optional: analysis name
         self.analysis_name = 'Muon Yukawa Analysis'
