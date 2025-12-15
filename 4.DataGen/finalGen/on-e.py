@@ -69,7 +69,7 @@ class Analysis():
         self.n_threads = -1
 
         # Optional: batch queue name
-        self.batch_queue = 'longlunch'
+        self.batch_queue = 'testmatch'
 
         # Optional: computing account
         self.comp_group = 'group_u_FCC.local_gen'
