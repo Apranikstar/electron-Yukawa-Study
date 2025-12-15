@@ -483,6 +483,15 @@ class Analysis():
         dframe2 = dframe2.Define("JetFlavor_BottomQuarkProduct", "recojet_isB[0] * recojet_isB[1]")
         dframe2 = dframe2.Define("JetFlavor_TauProduct", "recojet_isTAU[0] * recojet_isTAU[1]")
 
+
+        dframe2 = dframe2.Define("JetFlavor_UpDownQuarkProduct", "recojet_isU[0] * recojet_isD[1]")
+        dframe2 = dframe2.Define("JetFlavor_DownUpQuarkProduct", "recojet_isD[0] * recojet_isU[1]")
+
+        dframe2 = dframe2.Define("JetFlavor_StrangeCharmQuarkProduct", "recojet_isS[0] * recojet_isC[1]")
+        dframe2 = dframe2.Define("JetFlavor_CharmStrangeQuarkProduct", "recojet_isC[0] * recojet_isS[1]") 
+
+       
+
         return dframe2
 
     # Mandatory: output function
@@ -646,5 +655,9 @@ class Analysis():
             "JetFlavor_CharmQuarkProduct",
             "JetFlavor_BottomQuarkProduct",
             "JetFlavor_TauProduct",
+            "JetFlavor_UpDownQuarkProduct",
+            "JetFlavor_DownUpQuarkProduct" ,
+            "JetFlavor_StrangeCharmQuarkProduct" ,
+            "JetFlavor_CharmStrangeQuarkProduct",
         ]
         return branch_list
