@@ -24,7 +24,7 @@ class Analysis():
                             help='Maximum delta R for cone isolation.')
         parser.add_argument('--isolation-cut', default=0.2, type=float,
                             help='Isolation selection threshold.')
-        self.ana_args, _ = parser.parse_known_args(cmdline_args['remaining'])
+        self.ana_args, _ = parser.parse_known_args(cmdline_args['unknown'])
 
         # Mandatory: List of processes used in the analysis
         self.process_list = {
