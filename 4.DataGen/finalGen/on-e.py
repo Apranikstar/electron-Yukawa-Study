@@ -1,215 +1,263 @@
-import json
-import os
+'''
+Analysis for electron Yukawa coupling measurement in semileptonic channel.
+This analysis stage runs on HTCondor.
+'''
+from argparse import ArgumentParser
 import copy
 import urllib.request
-
-# --------------------------------
-# Read config file (environment variable or default)
-# --------------------------------
-
-# Parameters with defaults
-drmin = 0.01
-drmax = 0.2
-selection = 0.2
-
-# -----------------------------
-# Your existing code
-# -----------------------------
-
-processList = {
-    # xsecs need to be scaled by 280/989 ...for xsec of ee -> H ...
-
-    # Semileptonic processes
-    "wzp6_ee_Henueqq_ecm125": {"fraction": 1},
-    "wzp6_ee_Hqqenue_ecm125": {"fraction": 1},
-    "wzp6_ee_Hmunumuqq_ecm125": {"fraction": 1},
-    "wzp6_ee_Hqqmunumu_ecm125": {"fraction": 1},
-    "wzp6_ee_Htaunutauqq_ecm125": {"fraction": 1},
-    "wzp6_ee_Hqqtaunutau_ecm125": {"fraction": 1},
-    "wzp6_ee_taunutauqq_ecm125": {"fraction": 1},
-    "wzp6_ee_tautauqq_ecm125": {"fraction": 1},
-    "wzp6_ee_enueqq_ecm125": {"fraction": 1},
-    "wzp6_ee_eeqq_ecm125": {"fraction": 1},
-    "wzp6_ee_munumuqq_ecm125": {"fraction": 1},
-    "wzp6_ee_mumuqq_ecm125": {"fraction": 1},
-
-    # Fully leptonic Processes
-    "wzp6_ee_Htautau_ecm125": {"fraction": 1},
-    "wzp6_ee_Hllnunu_ecm125": {"fraction": 1},
-    "wzp6_ee_eenunu_ecm125": {"fraction": 1},
-    "wzp6_ee_mumununu_ecm125": {"fraction": 1},
-    "wzp6_ee_tautaununu_ecm125": {"fraction": 1},
-    "wzp6_ee_l1l2nunu_ecm125": {"fraction": 1},
-    "wzp6_ee_tautau_ecm125": {"fraction": 1},
- 
-    # Fully hadronic Processes
-    "wzp6_ee_Hgg_ecm125": {"fraction": 1},
-    "wzp6_ee_Hbb_ecm125": {"fraction": 1},
-    "wzp6_ee_qq_ecm125": {"fraction": 1},
-    "p8_ee_ZZ_4tau_ecm125": {"fraction": 1},
-}
-
-outputDir = "/eos/experiment/fcc/ee/analyses/case-studies/higgs/electron_yukawa/FinalDataGen/on-shell-electron/"
-inputDir = "/eos/experiment/fcc/ee/generation/DelphesEvents/winter2023/IDEA"
-nCPUS = -1
-includePaths = ["../../src/functions.h", "../../src/GEOFunctions.h", "../../src/MELAFunctions.h","../../src/SortJets.h" ]
-
-model_name = "fccee_flavtagging_edm4hep_wc"
-
-url_model_dir = "https://fccsw.web.cern.ch/fccsw/testsamples/jet_flavour_tagging/winter2023/wc_pt_13_01_2022/"
-url_preproc = "{}/{}.json".format(url_model_dir, model_name)
-url_model = "{}/{}.onnx".format(url_model_dir, model_name)
-
-model_dir = (
-    "/eos/experiment/fcc/ee/jet_flavour_tagging/winter2023/wc_pt_7classes_12_04_2023/"
-)
-local_preproc = "{}/{}.json".format(model_dir, model_name)
-local_model = "{}/{}.onnx".format(model_dir, model_name)
+import os
 
 
-def get_file_path(url, filename):
-    """Return local file path if exists else download from url and return basename."""
-    if os.path.exists(filename):
-        return os.path.abspath(filename)
-    else:
-        urllib.request.urlretrieve(url, os.path.basename(url))
-        return os.path.basename(url)
+# Mandatory: Analysis class where the user defines the operations on the dataframe
+class Analysis():
+    '''
+    Electron Yukawa coupling analysis in semileptonic WW channel.
+    '''
+    def __init__(self, cmdline_args):
+        # Parse additional arguments
+        parser = ArgumentParser(
+            description='Additional analysis arguments',
+            usage='Provided after "--"')
+        parser.add_argument('--dr-min', default=0.01, type=float,
+                            help='Minimum delta R for cone isolation.')
+        parser.add_argument('--dr-max', default=0.2, type=float,
+                            help='Maximum delta R for cone isolation.')
+        parser.add_argument('--isolation-cut', default=0.2, type=float,
+                            help='Isolation selection threshold.')
+        self.ana_args, _ = parser.parse_known_args(cmdline_args['remaining'])
 
+        # Mandatory: List of processes used in the analysis
+        self.process_list = {
+            # Semileptonic processes
+            "wzp6_ee_Henueqq_ecm125": {"fraction": 1},
+            "wzp6_ee_Hqqenue_ecm125": {"fraction": 1},
+            "wzp6_ee_Hmunumuqq_ecm125": {"fraction": 1},
+            "wzp6_ee_Hqqmunumu_ecm125": {"fraction": 1},
+            "wzp6_ee_Htaunutauqq_ecm125": {"fraction": 1},
+            "wzp6_ee_Hqqtaunutau_ecm125": {"fraction": 1},
+            "wzp6_ee_taunutauqq_ecm125": {"fraction": 1},
+            "wzp6_ee_tautauqq_ecm125": {"fraction": 1},
+            "wzp6_ee_enueqq_ecm125": {"fraction": 1},
+            "wzp6_ee_eeqq_ecm125": {"fraction": 1},
+            "wzp6_ee_munumuqq_ecm125": {"fraction": 1},
+            "wzp6_ee_mumuqq_ecm125": {"fraction": 1},
+            # Fully leptonic Processes
+            #"wzp6_ee_Htautau_ecm125": {"fraction": 1},
+            #"wzp6_ee_Hllnunu_ecm125": {"fraction": 1},
+            "wzp6_ee_eenunu_ecm125": {"fraction": 1},
+            "wzp6_ee_mumununu_ecm125": {"fraction": 1},
+            "wzp6_ee_tautaununu_ecm125": {"fraction": 1},
+            "wzp6_ee_l1l2nunu_ecm125": {"fraction": 1},
+            "wzp6_ee_tautau_ecm125": {"fraction": 1},
+            # Fully hadronic Processes
+            #"wzp6_ee_Hgg_ecm125": {"fraction": 1},
+            #"wzp6_ee_Hbb_ecm125": {"fraction": 1},
+            "wzp6_ee_qq_ecm125": {"fraction": 1},
+            "p8_ee_ZZ_4tau_ecm125": {"fraction": 1},
+        }
 
-weaver_preproc = get_file_path(url_preproc, local_preproc)
-weaver_model = get_file_path(url_model, local_model)
+        # Mandatory: Production tag
+        self.prod_tag = 'FCCee/winter2023/IDEA/'
 
-from addons.ONNXRuntime.jetFlavourHelper import JetFlavourHelper
-from addons.FastJet.jetClusteringHelper import ExclusiveJetClusteringHelper
+        # Optional: output directory
+        self.output_dir = 'electron_yukawa/stage1'
 
-# helpers to be used inside analysers
-jetFlavourHelper = None
-jetClusteringHelper = None
+        # Optional: analysis name
+        self.analysis_name = 'Electron Yukawa Analysis'
 
+        # Optional: number of threads
+        self.n_threads = -1
 
-class RDFanalysis:
-    """RDFanalysis class: defines the transformations applied to the input dataframe."""
+        # Optional: batch queue name
+        self.batch_queue = 'longlunch'
+
+        # Optional: computing account
+        self.comp_group = 'group_u_FCC.local_gen'
+
+        # Optional: output directory on eos
+        self.output_dir_eos = '/eos/experiment/fcc/ee/analyses/case-studies/higgs/electron_yukawa/FinalRound/on-shell-electron/'
+
+        # Optional: include paths for custom functions
+        self.include_paths = ["../../src/functions.h", "../../src/GEOFunctions.h", 
+                             "../../src/MELAFunctions.h", "../../src/SortJets.h"]
+
+        # Jet flavor tagging model setup
+        self.model_name = "fccee_flavtagging_edm4hep_wc"
+        self.url_model_dir = "https://fccsw.web.cern.ch/fccsw/testsamples/jet_flavour_tagging/winter2023/wc_pt_13_01_2022/"
+        self.model_dir = "/eos/experiment/fcc/ee/jet_flavour_tagging/winter2023/wc_pt_7classes_12_04_2023/"
+        
+        url_preproc = "{}/{}.json".format(self.url_model_dir, self.model_name)
+        url_model = "{}/{}.onnx".format(self.url_model_dir, self.model_name)
+        local_preproc = "{}/{}.json".format(self.model_dir, self.model_name)
+        local_model = "{}/{}.onnx".format(self.model_dir, self.model_name)
+        
+        self.weaver_preproc = self.get_file_path(url_preproc, local_preproc)
+        self.weaver_model = self.get_file_path(url_model, local_model)
+
+        # Helper objects (will be initialized in analyzers)
+        self.jetFlavourHelper = None
+        self.jetClusteringHelper = None
 
     @staticmethod
-    def analysers(df):
-        """Define aliases, variables, clustering, tagger inference, and filters."""
+    def get_file_path(url, filename):
+        """Return local file path if exists else download from url and return basename."""
+        if os.path.exists(filename):
+            return os.path.abspath(filename)
+        else:
+            urllib.request.urlretrieve(url, os.path.basename(url))
+            return os.path.basename(url)
 
+    # Mandatory: analyzers function to define the analysis graph
+    def analyzers(self, dframe):
+        '''
+        Analysis graph for electron Yukawa coupling measurement.
+        '''
+        from addons.ONNXRuntime.jetFlavourHelper import JetFlavourHelper
+        from addons.FastJet.jetClusteringHelper import ExclusiveJetClusteringHelper
+
+        # Get isolation parameters
+        drmin = self.ana_args.dr_min
+        drmax = self.ana_args.dr_max
+        selection = self.ana_args.isolation_cut
+
+        dframe2 = dframe
+
+        # ===========================
         # Aliases
-        df = df.Alias("Particle0", "Particle#0.index")
-        df = df.Alias("Particle1", "Particle#1.index")
-        df = df.Alias("MCRecoAssociations0", "MCRecoAssociations#0.index")
-        df = df.Alias("MCRecoAssociations1", "MCRecoAssociations#1.index")
-        df = df.Alias("Electron0", "Electron#0.index")
-        df = df.Alias("Muon0", "Muon#0.index")
-        df = df.Alias("Photon0", "Photon#0.index")
-        df = df.Alias("Jet2", "Jet#2.index")
+        # ===========================
+        dframe2 = dframe2.Alias("Particle0", "Particle#0.index")
+        dframe2 = dframe2.Alias("Particle1", "Particle#1.index")
+        dframe2 = dframe2.Alias("MCRecoAssociations0", "MCRecoAssociations#0.index")
+        dframe2 = dframe2.Alias("MCRecoAssociations1", "MCRecoAssociations#1.index")
+        dframe2 = dframe2.Alias("Electron0", "Electron#0.index")
+        dframe2 = dframe2.Alias("Muon0", "Muon#0.index")
+        dframe2 = dframe2.Alias("Photon0", "Photon#0.index")
+        dframe2 = dframe2.Alias("Jet2", "Jet#2.index")
 
-
+        # ===========================
         # Missing energy variables
-        df = df.Define("MissingEnergy_4Vec", "FCCAnalyses::ReconstructedParticle::get_tlv(MissingET)")
-        df = df.Define("MissingEnergy_Pt", "MissingEnergy_4Vec[0].Pt()")
-        df = df.Filter("MissingEnergy_Pt > 3")
-        df = df.Define("MissingEnergy_P", "MissingEnergy_4Vec[0].P()")
-        df = df.Define("MissingEnergy_E", "MissingEnergy_4Vec[0].E()")
-        df = df.Define("MissingEnergy_Theta", "MissingEnergy_4Vec[0].Theta()")
-        df = df.Define("MissingEnergy_Phi", "MissingEnergy_4Vec[0].Phi()")
-        df = df.Define("MissingEnergy_CosTheta", "MissingEnergy_4Vec[0].CosTheta()")
-        df = df.Define("MissingEnergy_CosPhi", "TMath::Cos(MissingEnergy_Phi)")
+        # ===========================
+        dframe2 = dframe2.Define("MissingQuantities_4Vec", "FCCAnalyses::ReconstructedParticle::get_tlv(MissingET)")
+        dframe2 = dframe2.Define("MissingQuantities_Pt", "MissingQuantities_4Vec[0].Pt()")
+        dframe2 = dframe2.Filter("MissingQuantities_Pt > 3")
+        dframe2 = dframe2.Define("MissingQuantities_P", "MissingQuantities_4Vec[0].P()")
+        dframe2 = dframe2.Define("MissingQuantities_E", "MissingQuantities_4Vec[0].E()")
+        dframe2 = dframe2.Define("MissingQuantities_Theta", "MissingQuantities_4Vec[0].Theta()")
+        dframe2 = dframe2.Define("MissingQuantities_Phi", "MissingQuantities_4Vec[0].Phi()")
+        dframe2 = dframe2.Define("MissingQuantities_CosTheta", "MissingQuantities_4Vec[0].CosTheta()")
+        dframe2 = dframe2.Define("MissingQuantities_CosPhi", "TMath::Cos(MissingQuantities_Phi)")
 
+        # ===========================
         # Photons and charged hadrons
-        df = df.Define("Photons_All", "FCCAnalyses::ReconstructedParticle::get(Photon0, ReconstructedParticles)")
-        df = df.Define("Photons_Selected", "FCCAnalyses::ReconstructedParticle::sel_p(20)(Photons_All)")
-        df = df.Define(
+        # ===========================
+        dframe2 = dframe2.Define("Photons_All", "FCCAnalyses::ReconstructedParticle::get(Photon0, ReconstructedParticles)")
+        dframe2 = dframe2.Define("Photons_Selected", "FCCAnalyses::ReconstructedParticle::sel_p(20)(Photons_All)")
+        dframe2 = dframe2.Define(
             "ChargedHadrons",
             "ReconstructedParticle2MC::selRP_ChargedHadrons(MCRecoAssociations0,MCRecoAssociations1,ReconstructedParticles,Particle)",
         )
 
+        # ===========================
         # Leptons
-        df = df.Define("Electrons_All", "FCCAnalyses::ReconstructedParticle::get(Electron0, ReconstructedParticles)")
-        df = df.Define("Muons_All", "FCCAnalyses::ReconstructedParticle::get(Muon0, ReconstructedParticles)")
-        df = df.Define("Electrons_PreSelection", "FCCAnalyses::ReconstructedParticle::sel_p(0)(Electrons_All)")
-        df = df.Define("Muons_PreSelection", "FCCAnalyses::ReconstructedParticle::sel_p(0)(Muons_All)")
+        # ===========================
+        dframe2 = dframe2.Define("Electrons_All", "FCCAnalyses::ReconstructedParticle::get(Electron0, ReconstructedParticles)")
+        dframe2 = dframe2.Define("Muons_All", "FCCAnalyses::ReconstructedParticle::get(Muon0, ReconstructedParticles)")
+        dframe2 = dframe2.Define("Electrons_PreSelection", "FCCAnalyses::ReconstructedParticle::sel_p(0)(Electrons_All)")
+        dframe2 = dframe2.Define("Muons_PreSelection", "FCCAnalyses::ReconstructedParticle::sel_p(0)(Muons_All)")
 
-        # Isolation using JSON-configurable parameters
-        df = df.Define(
+        # ===========================
+        # Isolation
+        # ===========================
+        dframe2 = dframe2.Define(
             "Electrons_IsolationValue",
             f"FCCAnalyses::ZHfunctions::coneIsolation({drmin}, {drmax})(Electrons_PreSelection, ChargedHadrons)",
         )
-        df = df.Define(
+        dframe2 = dframe2.Define(
             "Electrons_Isolated",
             f"FCCAnalyses::ZHfunctions::sel_iso({selection})(Electrons_PreSelection, Electrons_IsolationValue)",
         )
 
-        df = df.Define(
+        dframe2 = dframe2.Define(
             "Muons_IsolationValue",
             f"FCCAnalyses::ZHfunctions::coneIsolation({drmin}, {drmax})(Muons_PreSelection, ChargedHadrons)",
         )
-        df = df.Define(
+        dframe2 = dframe2.Define(
             "Muons_Isolated",
             f"FCCAnalyses::ZHfunctions::sel_iso({selection})(Muons_PreSelection, Muons_IsolationValue)",
         )
 
-        df = df.Define(
-            "Photons_IsolationValue", 
+        dframe2 = dframe2.Define(
+            "Photons_IsolationValue",
             f"FCCAnalyses::ZHfunctions::coneIsolation({drmin}, {drmax})(Photons_Selected, ChargedHadrons)"
         )
-        df = df.Define(
-            "Photons_Isolated", 
+        dframe2 = dframe2.Define(
+            "Photons_Isolated",
             f"FCCAnalyses::ZHfunctions::sel_iso({selection})(Photons_Selected, Photons_IsolationValue)"
         )
 
-        # Lepton counting
-        df = df.Define("N_IsolatedMuons", "Muons_Isolated.size()")
-        df = df.Define("N_IsolatedElectrons", "Electrons_Isolated.size()")
+        # ===========================
+        # Lepton counting and selection
+        # ===========================
+        dframe2 = dframe2.Define("N_IsolatedMuons", "Muons_Isolated.size()")
+        dframe2 = dframe2.Define("N_IsolatedElectrons", "Electrons_Isolated.size()")
 
         # Require exactly one isolated electron and no isolated muons
-        df = df.Filter("N_IsolatedElectrons == 1")
-        df = df.Filter("N_IsolatedMuons == 0")
+        dframe2 = dframe2.Filter("N_IsolatedElectrons == 1")
+        dframe2 = dframe2.Filter("N_IsolatedMuons == 0")
 
-        # Isolated lepton 4-vectors
-        df = df.Define("IsolatedElectron_4Vec", "FCCAnalyses::ReconstructedParticle::get_tlv(Electrons_Isolated)")
-        df = df.Define("IsolatedMuon_4Vec", "FCCAnalyses::ReconstructedParticle::get_tlv(Muons_Isolated)")
+        # ===========================
+        # Isolated particle 4-vectors
+        # ===========================
+        dframe2 = dframe2.Define("IsolatedElectron_4Vec", "FCCAnalyses::ReconstructedParticle::get_tlv(Electrons_Isolated)")
+        dframe2 = dframe2.Define("IsolatedMuon_4Vec", "FCCAnalyses::ReconstructedParticle::get_tlv(Muons_Isolated)")
+        dframe2 = dframe2.Define("IsolatedPhotons_4Vec", "FCCAnalyses::ReconstructedParticle::get_tlv(Photons_Isolated)")
 
-        # Isolated photons info
-        df = df.Define("IsolatedPhotons_4Vec", "FCCAnalyses::ReconstructedParticle::get_tlv(Photons_Isolated)")
-        df = df.Define("IsolatedPhoton_Phi", "IsolatedPhotons_4Vec[0].Phi()")
-        df = df.Define("IsolatedPhoton_Theta", "IsolatedPhotons_4Vec[0].Theta()")
-        df = df.Define("IsolatedPhoton_E", "IsolatedPhotons_4Vec[0].E()")
-        df = df.Define("IsolatedPhoton_CosTheta", "IsolatedPhotons_4Vec[0].CosTheta()")
-        df = df.Define("IsolatedPhoton_CosPhi", "TMath::Cos(IsolatedPhoton_Phi)")
-        df = df.Define("N_IsolatedPhotons", "Photons_Isolated.size()")
+        # ===========================
+        # Isolated photon properties
+        # ===========================
+        dframe2 = dframe2.Define("IsolatedPhoton_Phi", "IsolatedPhotons_4Vec[0].Phi()")
+        dframe2 = dframe2.Define("IsolatedPhoton_Theta", "IsolatedPhotons_4Vec[0].Theta()")
+        dframe2 = dframe2.Define("IsolatedPhoton_E", "IsolatedPhotons_4Vec[0].E()")
+        dframe2 = dframe2.Define("IsolatedPhoton_CosTheta", "IsolatedPhotons_4Vec[0].CosTheta()")
+        dframe2 = dframe2.Define("IsolatedPhoton_CosPhi", "TMath::Cos(IsolatedPhoton_Phi)")
+        dframe2 = dframe2.Define("N_IsolatedPhotons", "Photons_Isolated.size()")
 
+        # ===========================
         # Isolated electron properties
-        df = df.Define("IsolatedElectron_3Vec", "IsolatedElectron_4Vec[0].Vect()")
-        df = df.Define("IsolatedElectron_P", "IsolatedElectron_4Vec[0].P()")
-        df = df.Define("IsolatedElectron_Phi", "IsolatedElectron_4Vec[0].Phi()")
-        df = df.Define("IsolatedElectron_Theta", "IsolatedElectron_4Vec[0].Theta()")
-        df = df.Define("IsolatedElectron_E", "IsolatedElectron_4Vec[0].E()")
-        df = df.Define("IsolatedElectron_CosTheta", "IsolatedElectron_4Vec[0].CosTheta()")
-        df = df.Define("IsolatedElectron_CosPhi", "TMath::Cos(IsolatedElectron_Phi)")
-        df = df.Define("IsolatedElectron_Charge", "FCCAnalyses::ReconstructedParticle::get_charge(Electrons_Isolated)[0]")
+        # ===========================
+        dframe2 = dframe2.Define("IsolatedElectron_3Vec", "IsolatedElectron_4Vec[0].Vect()")
+        dframe2 = dframe2.Define("IsolatedElectron_P", "IsolatedElectron_4Vec[0].P()")
+        dframe2 = dframe2.Define("IsolatedElectron_Phi", "IsolatedElectron_4Vec[0].Phi()")
+        dframe2 = dframe2.Define("IsolatedElectron_Theta", "IsolatedElectron_4Vec[0].Theta()")
+        dframe2 = dframe2.Define("IsolatedElectron_E", "IsolatedElectron_4Vec[0].E()")
+        dframe2 = dframe2.Define("IsolatedElectron_CosTheta", "IsolatedElectron_4Vec[0].CosTheta()")
+        dframe2 = dframe2.Define("IsolatedElectron_CosPhi", "TMath::Cos(IsolatedElectron_Phi)")
+        dframe2 = dframe2.Define("IsolatedElectron_Charge", "FCCAnalyses::ReconstructedParticle::get_charge(Electrons_Isolated)[0]")
 
+        # ===========================
         # Combined masses
-        df = df.Define("ElectronNeutrino_InvariantMass", "(MissingEnergy_4Vec[0] + IsolatedElectron_4Vec[0]).M()")
+        # ===========================
+        dframe2 = dframe2.Define("ElectronNeutrino_InvariantMass", "(MissingQuantities_4Vec[0] + IsolatedElectron_4Vec[0]).M()")
 
+        # ===========================
         # Create collections with particles removed
-        df = df.Define(
+        # ===========================
+        dframe2 = dframe2.Define(
             "RecoParticles_NoPhotons",
             "FCCAnalyses::ReconstructedParticle::remove(ReconstructedParticles, Photons_Selected)",
         )
-        df = df.Define(
+        dframe2 = dframe2.Define(
             "RecoParticles_NoPhotonsNoElectrons",
             "FCCAnalyses::ReconstructedParticle::remove(RecoParticles_NoPhotons, Electrons_PreSelection)",
         )
-        df = df.Define(
+        dframe2 = dframe2.Define(
             "RecoParticles_NoLeptonsNoPhotons",
             "FCCAnalyses::ReconstructedParticle::remove(RecoParticles_NoPhotonsNoElectrons, Muons_PreSelection)",
         )
 
+        # ===========================
         # Jet clustering setup
-        global jetClusteringHelper
-        global jetFlavourHelper
-
+        # ===========================
         collections = {
             "GenParticles": "Particle",
             "PFParticles": "ReconstructedParticles",
@@ -227,182 +275,222 @@ class RDFanalysis:
         collections_noleptons_nophotons = copy.deepcopy(collections)
         collections_noleptons_nophotons["PFParticles"] = "RecoParticles_NoLeptonsNoPhotons"
 
-        jetClusteringHelper = ExclusiveJetClusteringHelper(collections_noleptons_nophotons["PFParticles"], 2)
-        df = jetClusteringHelper.define(df)
+        self.jetClusteringHelper = ExclusiveJetClusteringHelper(
+            collections_noleptons_nophotons["PFParticles"], 2
+        )
+        dframe2 = self.jetClusteringHelper.define(dframe2)
 
+        # ===========================
         # Jet flavour tagger
-        jetFlavourHelper = JetFlavourHelper(
+        # ===========================
+        self.jetFlavourHelper = JetFlavourHelper(
             collections_noleptons_nophotons,
-            jetClusteringHelper.jets,
-            jetClusteringHelper.constituents,
+            self.jetClusteringHelper.jets,
+            self.jetClusteringHelper.constituents,
         )
-        df = jetFlavourHelper.define(df)
+        dframe2 = self.jetFlavourHelper.define(dframe2)
 
-        # Filters and jet definitions
-        df = df.Filter("event_njet > 1")
-        df = df.Define("Jets_4Vec", "JetConstituentsUtils::compute_tlv_jets({})".format(jetClusteringHelper.jets))
-        df = df.Define("DiJet_InvariantMass", "JetConstituentsUtils::InvariantMass(Jets_4Vec[0], Jets_4Vec[1])")
-        df = df.Filter("DiJet_InvariantMass < 52.85")
-        df = df.Filter("DiJet_InvariantMass > 4")
+        # ===========================
+        # Jet filtering and definitions
+        # ===========================
+        dframe2 = dframe2.Filter("event_njet > 1")
+        dframe2 = dframe2.Define("Jets_4Vec", 
+                                 "JetConstituentsUtils::compute_tlv_jets({})".format(self.jetClusteringHelper.jets))
+        dframe2 = dframe2.Define("DiJet_InvariantMass", "JetConstituentsUtils::InvariantMass(Jets_4Vec[0], Jets_4Vec[1])")
+        dframe2 = dframe2.Filter("DiJet_InvariantMass < 52.85")
+        dframe2 = dframe2.Filter("DiJet_InvariantMass > 4")
 
+        # ===========================
         # Tagger inference
-        df = jetFlavourHelper.inference(weaver_preproc, weaver_model, df)
+        # ===========================
+        dframe2 = self.jetFlavourHelper.inference(self.weaver_preproc, self.weaver_model, dframe2)
 
+        # ===========================
+        # Additional jet clustering
+        # ===========================
         jetClusteringHelper_N2 = ExclusiveJetClusteringHelper("RecoParticles_NoLeptonsNoPhotons", 2, "N2")
-        df = jetClusteringHelper_N2.define(df)
+        dframe2 = jetClusteringHelper_N2.define(dframe2)
 
-        df = df.Define("JetClustering_d23", "std::sqrt(JetClusteringUtils::get_exclusive_dmerge(_jet_N2, 2))")
-        df = df.Define("JetClustering_d34", "std::sqrt(JetClusteringUtils::get_exclusive_dmerge(_jet_N2, 3))")
-        df = df.Define("Jets_Charge", "JetConstituentsUtils::get_charge({})".format(jetClusteringHelper.constituents))
-        df = df.Define("Jet1_NConstituents", "jet_nconst[0]")
-        df = df.Define("Jet2_NConstituents", "jet_nconst[1]")
-        df = df.Filter("Jet1_NConstituents > 2")
-        df = df.Filter("Jet2_NConstituents > 2")
+        dframe2 = dframe2.Define("JetClustering_d23", "std::sqrt(JetClusteringUtils::get_exclusive_dmerge(_jet_N2, 2))")
+        dframe2 = dframe2.Define("JetClustering_d34", "std::sqrt(JetClusteringUtils::get_exclusive_dmerge(_jet_N2, 3))")
+        dframe2 = dframe2.Define("Jets_Charge", "JetConstituentsUtils::get_charge({})".format(self.jetClusteringHelper.constituents))
+        dframe2 = dframe2.Define("Jet1_NConstituents", "jet_nconst[0]")
+        dframe2 = dframe2.Define("Jet2_NConstituents", "jet_nconst[1]")
+        dframe2 = dframe2.Filter("Jet1_NConstituents > 2")
+        dframe2 = dframe2.Filter("Jet2_NConstituents > 2")
 
+        # ===========================
         # Jet 1 kinematics
-        df = df.Define("Jet1_3Vec", "Jets_4Vec[0].Vect()")
-        df = df.Define("Jet1_P", "Jets_4Vec[0].P()")
-        df = df.Define("Jet1_Eta", "Jets_4Vec[0].Eta()")
-        df = df.Define("Jet1_Phi", "Jets_4Vec[0].Phi()")
-        df = df.Define("Jet1_M", "Jets_4Vec[0].M()")
-        df = df.Define("Jet1_E", "Jets_4Vec[0].E()")
-        df = df.Define("Jet1_Theta", "Jets_4Vec[0].Theta()")
-        df = df.Define("Jet1_CosTheta", "Jets_4Vec[0].CosTheta()")
-        df = df.Define("Jet1_CosPhi", "TMath::Cos(Jet1_Phi)")
+        # ===========================
+        dframe2 = dframe2.Define("Jet1_3Vec", "Jets_4Vec[0].Vect()")
+        dframe2 = dframe2.Define("Jet1_P", "Jets_4Vec[0].P()")
+        dframe2 = dframe2.Define("Jet1_Eta", "Jets_4Vec[0].Eta()")
+        dframe2 = dframe2.Define("Jet1_Phi", "Jets_4Vec[0].Phi()")
+        dframe2 = dframe2.Define("Jet1_M", "Jets_4Vec[0].M()")
+        dframe2 = dframe2.Define("Jet1_E", "Jets_4Vec[0].E()")
+        dframe2 = dframe2.Define("Jet1_Theta", "Jets_4Vec[0].Theta()")
+        dframe2 = dframe2.Define("Jet1_CosTheta", "Jets_4Vec[0].CosTheta()")
+        dframe2 = dframe2.Define("Jet1_CosPhi", "TMath::Cos(Jet1_Phi)")
 
+        # ===========================
         # Jet 2 kinematics
-        df = df.Define("Jet2_3Vec", "Jets_4Vec[1].Vect()")
-        df = df.Define("Jet2_P", "Jets_4Vec[1].P()")
-        df = df.Define("Jet2_Eta", "Jets_4Vec[1].Eta()")
-        df = df.Define("Jet2_Phi", "Jets_4Vec[1].Phi()")
-        df = df.Define("Jet2_M", "Jets_4Vec[1].M()")
-        df = df.Define("Jet2_E", "Jets_4Vec[1].E()")
-        df = df.Define("Jet2_Theta", "Jets_4Vec[1].Theta()")
-        df = df.Define("Jet2_CosTheta", "Jets_4Vec[1].CosTheta()")
-        df = df.Define("Jet2_CosPhi", "TMath::Cos(Jet2_Phi)")
+        # ===========================
+        dframe2 = dframe2.Define("Jet2_3Vec", "Jets_4Vec[1].Vect()")
+        dframe2 = dframe2.Define("Jet2_P", "Jets_4Vec[1].P()")
+        dframe2 = dframe2.Define("Jet2_Eta", "Jets_4Vec[1].Eta()")
+        dframe2 = dframe2.Define("Jet2_Phi", "Jets_4Vec[1].Phi()")
+        dframe2 = dframe2.Define("Jet2_M", "Jets_4Vec[1].M()")
+        dframe2 = dframe2.Define("Jet2_E", "Jets_4Vec[1].E()")
+        dframe2 = dframe2.Define("Jet2_Theta", "Jets_4Vec[1].Theta()")
+        dframe2 = dframe2.Define("Jet2_CosTheta", "Jets_4Vec[1].CosTheta()")
+        dframe2 = dframe2.Define("Jet2_CosPhi", "TMath::Cos(Jet2_Phi)")
 
+        # ===========================
         # Jet energy and charge
-        df = df.Define("Jets_MaxEnergy", "TMath::Max(Jets_4Vec[0].E(), Jets_4Vec[1].E())")
-        df = df.Define("Jets_MinEnergy", "TMath::Min(Jets_4Vec[0].E(), Jets_4Vec[1].E())")
-        df = df.Define("Jet1_Charge", "ROOT::VecOps::Sum(Jets_Charge[0])")
-        df = df.Define("Jet2_Charge", "ROOT::VecOps::Sum(Jets_Charge[1])")
+        # ===========================
+        dframe2 = dframe2.Define("Jets_MaxEnergy", "TMath::Max(Jets_4Vec[0].E(), Jets_4Vec[1].E())")
+        dframe2 = dframe2.Define("Jets_MinEnergy", "TMath::Min(Jets_4Vec[0].E(), Jets_4Vec[1].E())")
+        dframe2 = dframe2.Define("Jet1_Charge", "ROOT::VecOps::Sum(Jets_Charge[0])")
+        dframe2 = dframe2.Define("Jet2_Charge", "ROOT::VecOps::Sum(Jets_Charge[1])")
 
+        # ===========================
         # Angular separations: Jet1 vs Jet2
-        df = df.Define("Jet1Jet2_DeltaR", "Jets_4Vec[0].DeltaR(Jets_4Vec[1])")
-        df = df.Define("Jet1Jet2_DeltaPhi", "Jets_4Vec[0].DeltaPhi(Jets_4Vec[1])")
-        df = df.Define("Jet1Jet2_DeltaTheta", "Jet1_Theta - Jet2_Theta")
-        df = df.Define("Jet1Jet2_Angle", "Jets_4Vec[0].Angle(Jets_4Vec[1].Vect())")
-        df = df.Define("Jet1Jet2_CosAngle", "TMath::Cos(Jet1Jet2_Angle)")
+        # ===========================
+        dframe2 = dframe2.Define("Jet1Jet2_DeltaR", "Jets_4Vec[0].DeltaR(Jets_4Vec[1])")
+        dframe2 = dframe2.Define("Jet1Jet2_DeltaPhi", "Jets_4Vec[0].DeltaPhi(Jets_4Vec[1])")
+        dframe2 = dframe2.Define("Jet1Jet2_DeltaTheta", "Jet1_Theta - Jet2_Theta")
+        dframe2 = dframe2.Define("Jet1Jet2_Angle", "Jets_4Vec[0].Angle(Jets_4Vec[1].Vect())")
+        dframe2 = dframe2.Define("Jet1Jet2_CosAngle", "TMath::Cos(Jet1Jet2_Angle)")
 
-        # Angular separations: Electron vs Jet1
-        df = df.Define("ElectronJet1_DeltaR", "IsolatedElectron_4Vec[0].DeltaR(Jets_4Vec[0])")
-        df = df.Define("ElectronJet1_DeltaPhi", "IsolatedElectron_4Vec[0].DeltaPhi(Jets_4Vec[0])")
-        df = df.Define("ElectronJet1_Angle", "IsolatedElectron_4Vec[0].Angle(Jets_4Vec[0].Vect())")
-        df = df.Define("ElectronJet1_CosAngle", "TMath::Cos(ElectronJet1_Angle)")
+        # ===========================
+        # Angular separations: Electron vs Jets
+        # ===========================
+        dframe2 = dframe2.Define("ElectronJet1_DeltaR", "IsolatedElectron_4Vec[0].DeltaR(Jets_4Vec[0])")
+        dframe2 = dframe2.Define("ElectronJet1_DeltaPhi", "IsolatedElectron_4Vec[0].DeltaPhi(Jets_4Vec[0])")
+        dframe2 = dframe2.Define("ElectronJet1_Angle", "IsolatedElectron_4Vec[0].Angle(Jets_4Vec[0].Vect())")
+        dframe2 = dframe2.Define("ElectronJet1_CosAngle", "TMath::Cos(ElectronJet1_Angle)")
 
-        # Angular separations: Electron vs Jet2
-        df = df.Define("ElectronJet2_DeltaR", "IsolatedElectron_4Vec[0].DeltaR(Jets_4Vec[1])")
-        df = df.Define("ElectronJet2_DeltaPhi", "IsolatedElectron_4Vec[0].DeltaPhi(Jets_4Vec[1])")
-        df = df.Define("ElectronJet2_Angle", "IsolatedElectron_4Vec[0].Angle(Jets_4Vec[1].Vect())")
-        df = df.Define("ElectronJet2_CosAngle", "TMath::Cos(ElectronJet2_Angle)")
+        dframe2 = dframe2.Define("ElectronJet2_DeltaR", "IsolatedElectron_4Vec[0].DeltaR(Jets_4Vec[1])")
+        dframe2 = dframe2.Define("ElectronJet2_DeltaPhi", "IsolatedElectron_4Vec[0].DeltaPhi(Jets_4Vec[1])")
+        dframe2 = dframe2.Define("ElectronJet2_Angle", "IsolatedElectron_4Vec[0].Angle(Jets_4Vec[1].Vect())")
+        dframe2 = dframe2.Define("ElectronJet2_CosAngle", "TMath::Cos(ElectronJet2_Angle)")
 
-        # Max/Min electron-jet angular separations
-        df = df.Define("ElectronJets_MaxDeltaR", "TMath::Max(ElectronJet1_DeltaR, ElectronJet2_DeltaR)")
-        df = df.Define("ElectronJets_MinDeltaR", "TMath::Min(ElectronJet1_DeltaR, ElectronJet2_DeltaR)")
-        df = df.Define("ElectronJets_MaxDeltaPhi", "TMath::Max(ElectronJet1_DeltaPhi, ElectronJet2_DeltaPhi)")
-        df = df.Define("ElectronJets_MinDeltaPhi", "TMath::Min(ElectronJet1_DeltaPhi, ElectronJet2_DeltaPhi)")
-        df = df.Define("ElectronJets_MaxCosAngle", "TMath::Max(ElectronJet1_CosAngle, ElectronJet2_CosAngle)")
-        df = df.Define("ElectronJets_MinCosAngle", "TMath::Min(ElectronJet1_CosAngle, ElectronJet2_CosAngle)")
+        dframe2 = dframe2.Define("ElectronJets_MaxDeltaR", "TMath::Max(ElectronJet1_DeltaR, ElectronJet2_DeltaR)")
+        dframe2 = dframe2.Define("ElectronJets_MinDeltaR", "TMath::Min(ElectronJet1_DeltaR, ElectronJet2_DeltaR)")
+        dframe2 = dframe2.Define("ElectronJets_MaxDeltaPhi", "TMath::Max(ElectronJet1_DeltaPhi, ElectronJet2_DeltaPhi)")
+        dframe2 = dframe2.Define("ElectronJets_MinDeltaPhi", "TMath::Min(ElectronJet1_DeltaPhi, ElectronJet2_DeltaPhi)")
+        dframe2 = dframe2.Define("ElectronJets_MaxCosAngle", "TMath::Max(ElectronJet1_CosAngle, ElectronJet2_CosAngle)")
+        dframe2 = dframe2.Define("ElectronJets_MinCosAngle", "TMath::Min(ElectronJet1_CosAngle, ElectronJet2_CosAngle)")
 
-        # Angular separations: MissingEnergy vs Electron
-        df = df.Define("MissingEnergyElectron_DeltaR", "MissingEnergy_4Vec[0].DeltaR(IsolatedElectron_4Vec[0])")
-        df = df.Define("MissingEnergyElectron_DeltaPhi", "MissingEnergy_4Vec[0].DeltaPhi(IsolatedElectron_4Vec[0])")
-        df = df.Define("MissingEnergyElectron_Angle", "MissingEnergy_4Vec[0].Angle(IsolatedElectron_4Vec[0].Vect())")
-        df = df.Define("MissingEnergyElectron_CosAngle", "TMath::Cos(MissingEnergyElectron_Angle)")
+        # ===========================
+        # Angular separations: MissingQuantities vs Electron
+        # ===========================
+        dframe2 = dframe2.Define("MissingQuantitiesElectron_DeltaR", "MissingQuantities_4Vec[0].DeltaR(IsolatedElectron_4Vec[0])")
+        dframe2 = dframe2.Define("MissingQuantitiesElectron_DeltaPhi", "MissingQuantities_4Vec[0].DeltaPhi(IsolatedElectron_4Vec[0])")
+        dframe2 = dframe2.Define("MissingQuantitiesElectron_Angle", "MissingQuantities_4Vec[0].Angle(IsolatedElectron_4Vec[0].Vect())")
+        dframe2 = dframe2.Define("MissingQuantitiesElectron_CosAngle", "TMath::Cos(MissingQuantitiesElectron_Angle)")
 
-        # Angular separations: MissingEnergy vs Jet1
-        df = df.Define("MissingEnergyJet1_DeltaR", "MissingEnergy_4Vec[0].DeltaR(Jets_4Vec[0])")
-        df = df.Define("MissingEnergyJet1_DeltaPhi", "MissingEnergy_4Vec[0].DeltaPhi(Jets_4Vec[0])")
-        df = df.Define("MissingEnergyJet1_Angle", "MissingEnergy_4Vec[0].Angle(Jets_4Vec[0].Vect())")
-        df = df.Define("MissingEnergyJet1_CosAngle", "TMath::Cos(MissingEnergyJet1_Angle)")
+        # ===========================
+        # Angular separations: MissingQuantities vs Jets
+        # ===========================
+        dframe2 = dframe2.Define("MissingQuantitiesJet1_DeltaR", "MissingQuantities_4Vec[0].DeltaR(Jets_4Vec[0])")
+        dframe2 = dframe2.Define("MissingQuantitiesJet1_DeltaPhi", "MissingQuantities_4Vec[0].DeltaPhi(Jets_4Vec[0])")
+        dframe2 = dframe2.Define("MissingQuantitiesJet1_Angle", "MissingQuantities_4Vec[0].Angle(Jets_4Vec[0].Vect())")
+        dframe2 = dframe2.Define("MissingQuantitiesJet1_CosAngle", "TMath::Cos(MissingQuantitiesJet1_Angle)")
 
-        # Angular separations: MissingEnergy vs Jet2
-        df = df.Define("MissingEnergyJet2_DeltaR", "MissingEnergy_4Vec[0].DeltaR(Jets_4Vec[1])")
-        df = df.Define("MissingEnergyJet2_DeltaPhi", "MissingEnergy_4Vec[0].DeltaPhi(Jets_4Vec[1])")
-        df = df.Define("MissingEnergyJet2_Angle", "MissingEnergy_4Vec[0].Angle(Jets_4Vec[1].Vect())")
-        df = df.Define("MissingEnergyJet2_CosAngle", "TMath::Cos(MissingEnergyJet2_Angle)")
+        dframe2 = dframe2.Define("MissingQuantitiesJet2_DeltaR", "MissingQuantities_4Vec[0].DeltaR(Jets_4Vec[1])")
+        dframe2 = dframe2.Define("MissingQuantitiesJet2_DeltaPhi", "MissingQuantities_4Vec[0].DeltaPhi(Jets_4Vec[1])")
+        dframe2 = dframe2.Define("MissingQuantitiesJet2_Angle", "MissingQuantities_4Vec[0].Angle(Jets_4Vec[1].Vect())")
+        dframe2 = dframe2.Define("MissingQuantitiesJet2_CosAngle", "TMath::Cos(MissingQuantitiesJet2_Angle)")
 
-        # Max/Min MissingEnergy-jet angular separations
-        df = df.Define("MissingEnergyJets_MaxDeltaR", "TMath::Max(MissingEnergyJet1_DeltaR, MissingEnergyJet2_DeltaR)")
-        df = df.Define("MissingEnergyJets_MinDeltaR", "TMath::Min(MissingEnergyJet1_DeltaR, MissingEnergyJet2_DeltaR)")
-        df = df.Define("MissingEnergyJets_MaxDeltaPhi", "TMath::Max(MissingEnergyJet1_DeltaPhi, MissingEnergyJet2_DeltaPhi)")
-        df = df.Define("MissingEnergyJets_MinDeltaPhi", "TMath::Min(MissingEnergyJet1_DeltaPhi, MissingEnergyJet2_DeltaPhi)")
-        df = df.Define("MissingEnergyJets_MaxCosAngle", "TMath::Max(MissingEnergyJet1_CosAngle, MissingEnergyJet2_CosAngle)")
-        df = df.Define("MissingEnergyJets_MinCosAngle", "TMath::Min(MissingEnergyJet1_CosAngle, MissingEnergyJet2_CosAngle)")
+        dframe2 = dframe2.Define("MissingQuantitiesJets_MaxDeltaR", "TMath::Max(MissingQuantitiesJet1_DeltaR, MissingQuantitiesJet2_DeltaR)")
+        dframe2 = dframe2.Define("MissingQuantitiesJets_MinDeltaR", "TMath::Min(MissingQuantitiesJet1_DeltaR, MissingQuantitiesJet2_DeltaR)")
+        dframe2 = dframe2.Define("MissingQuantitiesJets_MaxDeltaPhi", "TMath::Max(MissingQuantitiesJet1_DeltaPhi, MissingQuantitiesJet2_DeltaPhi)")
+        dframe2 = dframe2.Define("MissingQuantitiesJets_MinDeltaPhi", "TMath::Min(MissingQuantitiesJet1_DeltaPhi, MissingQuantitiesJet2_DeltaPhi)")
+        dframe2 = dframe2.Define("MissingQuantitiesJets_MaxCosAngle", "TMath::Max(MissingQuantitiesJet1_CosAngle, MissingQuantitiesJet2_CosAngle)")
+        dframe2 = dframe2.Define("MissingQuantitiesJets_MinCosAngle", "TMath::Min(MissingQuantitiesJet1_CosAngle, MissingQuantitiesJet2_CosAngle)")
 
+        # ===========================
         # Event-level invariant mass
-        df = df.Define("Event_InvariantMass", "(Jets_4Vec[0] + Jets_4Vec[1] + MissingEnergy_4Vec[0] + IsolatedElectron_4Vec[0]).M()")
+        # ===========================
+        dframe2 = dframe2.Define("Event_InvariantMass", "(Jets_4Vec[0] + Jets_4Vec[1] + MissingQuantities_4Vec[0] + IsolatedElectron_4Vec[0]).M()")
 
+        # ===========================
         # Combined system masses
-        df = df.Define("ElectronDiJet_InvariantMass", "(Jets_4Vec[0] + Jets_4Vec[1] + IsolatedElectron_4Vec[0]).M()")
-        df = df.Define("ElectronJet1_InvariantMass", "(Jets_4Vec[0] + IsolatedElectron_4Vec[0]).M()")
-        df = df.Define("ElectronJet2_InvariantMass", "(Jets_4Vec[1] + IsolatedElectron_4Vec[0]).M()")
-        df = df.Define("DiJet_Energy", "(Jets_4Vec[0] + Jets_4Vec[1]).E()")
+        # ===========================
+        dframe2 = dframe2.Define("ElectronDiJet_InvariantMass", "(Jets_4Vec[0] + Jets_4Vec[1] + IsolatedElectron_4Vec[0]).M()")
+        dframe2 = dframe2.Define("ElectronJet1_InvariantMass", "(Jets_4Vec[0] + IsolatedElectron_4Vec[0]).M()")
+        dframe2 = dframe2.Define("ElectronJet2_InvariantMass", "(Jets_4Vec[1] + IsolatedElectron_4Vec[0]).M()")
+        dframe2 = dframe2.Define("DiJet_Energy", "(Jets_4Vec[0] + Jets_4Vec[1]).E()")
 
+        # ===========================
         # System angular properties
-        df = df.Define("ElectronDiJet_Phi", "(Jets_4Vec[0] + Jets_4Vec[1] + IsolatedElectron_4Vec[0]).Phi()")
-        df = df.Define("DiJet_Phi", "(Jets_4Vec[0] + Jets_4Vec[1]).Phi()")
+        # ===========================
+        dframe2 = dframe2.Define("ElectronDiJet_Phi", "(Jets_4Vec[0] + Jets_4Vec[1] + IsolatedElectron_4Vec[0]).Phi()")
+        dframe2 = dframe2.Define("DiJet_Phi", "(Jets_4Vec[0] + Jets_4Vec[1]).Phi()")
 
+        # ===========================
         # W boson (leptonic) properties
-        df = df.Define("WBosonLeptonic_InvariantMass", "(IsolatedElectron_4Vec[0] + MissingEnergy_4Vec[0]).M()")
-        df = df.Define("WBosonLeptonic_Theta", "(IsolatedElectron_4Vec[0] + MissingEnergy_4Vec[0]).Theta()")
+        # ===========================
+        dframe2 = dframe2.Define("WBosonLeptonic_InvariantMass", "(IsolatedElectron_4Vec[0] + MissingQuantities_4Vec[0]).M()")
+        dframe2 = dframe2.Define("WBosonLeptonic_Theta", "(IsolatedElectron_4Vec[0] + MissingQuantities_4Vec[0]).Theta()")
 
+        # ===========================
         # On-shell and off-shell mass variables
-        df = df.Define("System_OnShellMass", "TMath::Max((Jets_4Vec[0]+Jets_4Vec[1]).M(), WBosonLeptonic_InvariantMass)")
-        df = df.Define("System_OffShellMass", "TMath::Min((Jets_4Vec[0]+Jets_4Vec[1]).M(), WBosonLeptonic_InvariantMass)")
-        df = df.Define("System_MaxCosTheta", "TMath::Cos(TMath::Max((Jets_4Vec[0]+Jets_4Vec[1]).Theta(), WBosonLeptonic_Theta))")
-        df = df.Define("System_MinCosTheta", "TMath::Cos(TMath::Min((Jets_4Vec[0]+Jets_4Vec[1]).Theta(), WBosonLeptonic_Theta))")
-        df = df.Define("Event_EnergyImbalance", "125.0 - MissingEnergy_4Vec[0].E() - IsolatedElectron_4Vec[0].E() - Jets_4Vec[0].E() - Jets_4Vec[1].E()")
+        # ===========================
+        dframe2 = dframe2.Define("System_OnShellMass", "TMath::Max((Jets_4Vec[0]+Jets_4Vec[1]).M(), WBosonLeptonic_InvariantMass)")
+        dframe2 = dframe2.Define("System_OffShellMass", "TMath::Min((Jets_4Vec[0]+Jets_4Vec[1]).M(), WBosonLeptonic_InvariantMass)")
+        dframe2 = dframe2.Define("System_MaxCosTheta", "TMath::Cos(TMath::Max((Jets_4Vec[0]+Jets_4Vec[1]).Theta(), WBosonLeptonic_Theta))")
+        dframe2 = dframe2.Define("System_MinCosTheta", "TMath::Cos(TMath::Min((Jets_4Vec[0]+Jets_4Vec[1]).Theta(), WBosonLeptonic_Theta))")
+        dframe2 = dframe2.Define("Event_EnergyImbalance", "125.0 - MissingQuantities_4Vec[0].E() - IsolatedElectron_4Vec[0].E() - Jets_4Vec[0].E() - Jets_4Vec[1].E()")
 
+        # ===========================
         # MELA Variables (production and decay angles)
-        df = df.Define(
+        # ===========================
+        dframe2 = dframe2.Define(
             "MELA_Angles",
-            "FCCAnalyses::MELA::MELACalculator::mela(Jets_4Vec[0], Jets_4Vec[1], MissingEnergy_4Vec[0], IsolatedElectron_4Vec[0], IsolatedElectron_Charge, Jet1_Charge, Jet2_Charge)",
+            "FCCAnalyses::MELA::MELACalculator::mela(Jets_4Vec[0], Jets_4Vec[1], MissingQuantities_4Vec[0], IsolatedElectron_4Vec[0], IsolatedElectron_Charge, Jet1_Charge, Jet2_Charge)",
         )
-        df = df.Define("MELA_Phi", "MELA_Angles.phi")
-        df = df.Define("MELA_CosPhi", "MELA_Angles.cosPhi")
-        df = df.Define("MELA_Phi1", "MELA_Angles.phi1")
-        df = df.Define("MELA_CosPhi1", "MELA_Angles.cosPhi1")
-        df = df.Define("MELA_PhiStar", "MELA_Angles.phiStar")
-        df = df.Define("MELA_CosPhiStar", "MELA_Angles.cosPhiStar")
-        df = df.Define("MELA_ThetaStar", "MELA_Angles.thetaStar")
-        df = df.Define("MELA_CosThetaStar", "MELA_Angles.cosThetaStar")
-        df = df.Define("MELA_Theta1", "MELA_Angles.theta1")
-        df = df.Define("MELA_CosTheta1", "MELA_Angles.cosTheta1")
-        df = df.Define("MELA_Theta2", "MELA_Angles.theta2")
-        df = df.Define("MELA_CosTheta2", "MELA_Angles.cosTheta2")
+        dframe2 = dframe2.Define("MELA_Phi", "MELA_Angles.phi")
+        dframe2 = dframe2.Define("MELA_CosPhi", "MELA_Angles.cosPhi")
+        dframe2 = dframe2.Define("MELA_Phi1", "MELA_Angles.phi1")
+        dframe2 = dframe2.Define("MELA_CosPhi1", "MELA_Angles.cosPhi1")
+        dframe2 = dframe2.Define("MELA_PhiStar", "MELA_Angles.phiStar")
+        dframe2 = dframe2.Define("MELA_CosPhiStar", "MELA_Angles.cosPhiStar")
+        dframe2 = dframe2.Define("MELA_ThetaStar", "MELA_Angles.thetaStar")
+        dframe2 = dframe2.Define("MELA_CosThetaStar", "MELA_Angles.cosThetaStar")
+        dframe2 = dframe2.Define("MELA_Theta1", "MELA_Angles.theta1")
+        dframe2 = dframe2.Define("MELA_CosTheta1", "MELA_Angles.cosTheta1")
+        dframe2 = dframe2.Define("MELA_Theta2", "MELA_Angles.theta2")
+        dframe2 = dframe2.Define("MELA_CosTheta2", "MELA_Angles.cosTheta2")
 
+        # ===========================
         # Event-shape variables
-        df = df.Define("EventShape_Planarity", "FCCAnalyses::GEOFunctions::EventGeoFunctions::calculatePlanarity(Jet1_3Vec, Jet2_3Vec, IsolatedElectron_3Vec)")
-        df = df.Define("EventShape_Aplanarity", "FCCAnalyses::GEOFunctions::EventGeoFunctions::calculateAplanarity(Jet1_3Vec, Jet2_3Vec, IsolatedElectron_3Vec)")
-        df = df.Define("EventShape_Sphericity", "FCCAnalyses::GEOFunctions::EventGeoFunctions::calculateSphericity(Jet1_3Vec, Jet2_3Vec, IsolatedElectron_3Vec)")
-        df = df.Define("EventShape_Asphericity", "FCCAnalyses::GEOFunctions::EventGeoFunctions::calculateAsphericity(Jet1_3Vec, Jet2_3Vec, IsolatedElectron_3Vec)")
+        # ===========================
+        dframe2 = dframe2.Define("EventShape_Planarity", "FCCAnalyses::GEOFunctions::EventGeoFunctions::calculatePlanarity(Jet1_3Vec, Jet2_3Vec, IsolatedElectron_3Vec)")
+        dframe2 = dframe2.Define("EventShape_Aplanarity", "FCCAnalyses::GEOFunctions::EventGeoFunctions::calculateAplanarity(Jet1_3Vec, Jet2_3Vec, IsolatedElectron_3Vec)")
+        dframe2 = dframe2.Define("EventShape_Sphericity", "FCCAnalyses::GEOFunctions::EventGeoFunctions::calculateSphericity(Jet1_3Vec, Jet2_3Vec, IsolatedElectron_3Vec)")
+        dframe2 = dframe2.Define("EventShape_Asphericity", "FCCAnalyses::GEOFunctions::EventGeoFunctions::calculateAsphericity(Jet1_3Vec, Jet2_3Vec, IsolatedElectron_3Vec)")
 
+        # ===========================
         # Jet flavor tagging scores - Products
-        df = df.Define("JetFlavor_GluonProduct", "recojet_isG[0] * recojet_isG[1]")
-        df = df.Define("JetFlavor_UpQuarkProduct", "recojet_isU[0] * recojet_isU[1]")
-        df = df.Define("JetFlavor_DownQuarkProduct", "recojet_isD[0] * recojet_isD[1]")
-        df = df.Define("JetFlavor_StrangeQuarkProduct", "recojet_isS[0] * recojet_isS[1]")
-        df = df.Define("JetFlavor_CharmQuarkProduct", "recojet_isC[0] * recojet_isC[1]")
-        df = df.Define("JetFlavor_BottomQuarkProduct", "recojet_isB[0] * recojet_isB[1]")
-        df = df.Define("JetFlavor_TauProduct", "recojet_isTAU[0] * recojet_isTAU[1]")
+        # ===========================
+        dframe2 = dframe2.Define("JetFlavor_GluonProduct", "recojet_isG[0] * recojet_isG[1]")
+        dframe2 = dframe2.Define("JetFlavor_UpQuarkProduct", "recojet_isU[0] * recojet_isU[1]")
+        dframe2 = dframe2.Define("JetFlavor_DownQuarkProduct", "recojet_isD[0] * recojet_isD[1]")
+        dframe2 = dframe2.Define("JetFlavor_StrangeQuarkProduct", "recojet_isS[0] * recojet_isS[1]")
+        dframe2 = dframe2.Define("JetFlavor_CharmQuarkProduct", "recojet_isC[0] * recojet_isC[1]")
+        dframe2 = dframe2.Define("JetFlavor_BottomQuarkProduct", "recojet_isB[0] * recojet_isB[1]")
+        dframe2 = dframe2.Define("JetFlavor_TauProduct", "recojet_isTAU[0] * recojet_isTAU[1]")
 
-        return df
+        return dframe2
 
-    @staticmethod
-    def output():
-        """Return a list of all branches defined in analysers()."""
-        branchList = [
+    # Mandatory: output function
+    def output(self):
+        '''
+        Output variables which will be saved to output root file.
+        '''
+        branch_list = [
             # Photon variables
             "IsolatedPhoton_Phi",
             "IsolatedPhoton_Theta",
@@ -420,14 +508,14 @@ class RDFanalysis:
             "IsolatedElectron_CosPhi",
             "N_IsolatedElectrons",
 
-            # Missing energy variables
-            "MissingEnergy_P",
-            "MissingEnergy_E",
-            "MissingEnergy_Pt",
-            "MissingEnergy_Theta",
-            "MissingEnergy_Phi",
-            "MissingEnergy_CosTheta",
-            "MissingEnergy_CosPhi",
+            # Missing quantities variables
+            "MissingQuantities_P",
+            "MissingQuantities_E",
+            "MissingQuantities_Pt",
+            "MissingQuantities_Theta",
+            "MissingQuantities_Phi",
+            "MissingQuantities_CosTheta",
+            "MissingQuantities_CosPhi",
 
             # Combined system masses
             "ElectronNeutrino_InvariantMass",
@@ -488,27 +576,27 @@ class RDFanalysis:
             "ElectronJets_MaxCosAngle",
             "ElectronJets_MinCosAngle",
 
-            # Angular separations: MissingEnergy vs Electron
-            "MissingEnergyElectron_DeltaR",
-            "MissingEnergyElectron_DeltaPhi",
-            "MissingEnergyElectron_Angle",
-            "MissingEnergyElectron_CosAngle",
+            # Angular separations: MissingQuantities vs Electron
+            "MissingQuantitiesElectron_DeltaR",
+            "MissingQuantitiesElectron_DeltaPhi",
+            "MissingQuantitiesElectron_Angle",
+            "MissingQuantitiesElectron_CosAngle",
 
-            # Angular separations: MissingEnergy vs Jets
-            "MissingEnergyJet1_DeltaR",
-            "MissingEnergyJet1_DeltaPhi",
-            "MissingEnergyJet1_Angle",
-            "MissingEnergyJet1_CosAngle",
-            "MissingEnergyJet2_DeltaR",
-            "MissingEnergyJet2_DeltaPhi",
-            "MissingEnergyJet2_Angle",
-            "MissingEnergyJet2_CosAngle",
-            "MissingEnergyJets_MaxDeltaR",
-            "MissingEnergyJets_MinDeltaR",
-            "MissingEnergyJets_MaxDeltaPhi",
-            "MissingEnergyJets_MinDeltaPhi",
-            "MissingEnergyJets_MaxCosAngle",
-            "MissingEnergyJets_MinCosAngle",
+            # Angular separations: MissingQuantities vs Jets
+            "MissingQuantitiesJet1_DeltaR",
+            "MissingQuantitiesJet1_DeltaPhi",
+            "MissingQuantitiesJet1_Angle",
+            "MissingQuantitiesJet1_CosAngle",
+            "MissingQuantitiesJet2_DeltaR",
+            "MissingQuantitiesJet2_DeltaPhi",
+            "MissingQuantitiesJet2_Angle",
+            "MissingQuantitiesJet2_CosAngle",
+            "MissingQuantitiesJets_MaxDeltaR",
+            "MissingQuantitiesJets_MinDeltaR",
+            "MissingQuantitiesJets_MaxDeltaPhi",
+            "MissingQuantitiesJets_MinDeltaPhi",
+            "MissingQuantitiesJets_MaxCosAngle",
+            "MissingQuantitiesJets_MinCosAngle",
 
             # Event-level masses
             "Event_InvariantMass",
@@ -559,5 +647,4 @@ class RDFanalysis:
             "JetFlavor_BottomQuarkProduct",
             "JetFlavor_TauProduct",
         ]
-        return branchListMELA_Angles.thetaStar")
-        df = df.Define("
+        return branch_list
