@@ -17,26 +17,32 @@ selection = 0.2
 # -----------------------------
 
 processList = {
-    # xsecs need to be scaled by 280/989 ...for xsec of ee -> H ...
-    "wzp6_ee_enueqq_ecm125": {"fraction": 1},
-    "wzp6_ee_eeqq_ecm125": {"fraction": 1},
-    "wzp6_ee_munumuqq_ecm125": {"fraction": 1},
-    "wzp6_ee_mumuqq_ecm125": {"fraction": 1},
-
-    # Fully leptonic Processes
-    "wzp6_ee_Htautau_ecm125": {"fraction": 1},
-    "wzp6_ee_Hllnunu_ecm125": {"fraction": 1},
-    "wzp6_ee_eenunu_ecm125": {"fraction": 1},
-    "wzp6_ee_mumununu_ecm125": {"fraction": 1},
-    "wzp6_ee_tautaununu_ecm125": {"fraction": 1},
-    "wzp6_ee_l1l2nunu_ecm125": {"fraction": 1},
-    "wzp6_ee_tautau_ecm125": {"fraction": 1},
- 
-    # Fully hadronic Processes
-    "wzp6_ee_Hgg_ecm125": {"fraction": 1},
-    "wzp6_ee_Hbb_ecm125": {"fraction": 1},
-    "wzp6_ee_qq_ecm125": {"fraction": 1},
-    "p8_ee_ZZ_4tau_ecm125": {"fraction": 1},
+                # Semileptonic processes
+            "wzp6_ee_Henueqq_ecm125": {"fraction": 10},
+            "wzp6_ee_Hqqenue_ecm125": {"fraction": 10},
+            "wzp6_ee_Hmunumuqq_ecm125": {"fraction": 10},
+            "wzp6_ee_Hqqmunumu_ecm125": {"fraction": 10},
+            "wzp6_ee_Htaunutauqq_ecm125": {"fraction": 10},
+            "wzp6_ee_Hqqtaunutau_ecm125": {"fraction": 10},
+            "wzp6_ee_taunutauqq_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_tautauqq_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_enueqq_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_eeqq_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_munumuqq_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_mumuqq_ecm125": {"fraction": 1,'chunks': 10},
+            # Fully leptonic Processes
+            #"wzp6_ee_Htautau_ecm125": {"fraction": 1},
+            #"wzp6_ee_Hllnunu_ecm125": {"fraction": 1},
+            "wzp6_ee_eenunu_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_mumununu_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_tautaununu_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_l1l2nunu_ecm125": {"fraction": 1,'chunks': 10},
+            "wzp6_ee_tautau_ecm125": {"fraction": 1,'chunks': 10},
+            # Fully hadronic Processes
+            #"wzp6_ee_Hgg_ecm125": {"fraction": 1},
+            #"wzp6_ee_Hbb_ecm125": {"fraction": 1},
+            "wzp6_ee_qq_ecm125": {"fraction": 1,'chunks': 10},
+            "p8_ee_ZZ_4tau_ecm125": {"fraction": 1,'chunks': 10},
 }
 
 outputDir = "/eos/experiment/fcc/ee/analyses/case-studies/higgs/electron_yukawa/DataGenReduced/off-shell-electron/"
