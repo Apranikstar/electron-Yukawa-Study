@@ -1,5 +1,15 @@
 #ifndef SORTJETCONSTITUENTS_H
 #define SORTJETCONSTITUENTS_H
+
+#include <algorithm>
+#include <numeric>
+#include <stdexcept>
+#include "ROOT/RVec.hxx"
+#include "edm4hep/ReconstructedParticleData.h"
+
+// Type alias for jet constituents (vector of ReconstructedParticleData)
+using FCCAnalysesJetConstituents = ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData>;
+
 /*
   Sorts jet constituents based on inference scores (highest to lowest).
   Example usage in RDataFrame:
