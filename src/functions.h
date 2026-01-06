@@ -12,7 +12,6 @@
 #include "edm4hep/ParticleIDData.h"
 #include "ReconstructedParticle2MC.h"
 
-
 namespace FCCAnalyses { namespace ZHfunctions {
 
 
@@ -159,6 +158,38 @@ ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData>  sel_iso::operator() (Vec
     }
     return result;
 }
+
+
+struct sel_iso_rp {
+    sel_iso_rp(float arg_iso_max);
+    float iso_max = 0.25;
+
+    // input: particles and isolation values
+    // output: selected particles
+    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> operator()(
+        const ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData>& in,
+        const ROOT::VecOps::RVec<float>& iso
+    );
+};
+
+sel_iso_rp::sel_iso_rp(float arg_iso_max) : iso_max(arg_iso_max) { }
+
+ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> sel_iso_rp::operator()(
+    const ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData>& in,
+    const ROOT::VecOps::RVec<float>& iso
+) {
+    ROOT::VecOps::RVec<edm4hep::ReconstructedParticleData> result;
+    result.reserve(in.size());
+
+    for (size_t i = 0; i < in.size(); ++i) {
+        if (iso[i] < iso_max) {
+            result.push_back(in[i]);
+        }
+    }
+
+    return result;
+}
+
 
  
 // compute the cone isolation for reco particles
